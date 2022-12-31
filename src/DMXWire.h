@@ -44,7 +44,6 @@ private:
 
 	static int packetBusy;
 
-
 }; extern DMXWire Dmxwire;
 
 

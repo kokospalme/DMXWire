@@ -50,7 +50,6 @@ void DMXWire::write(uint16_t channel, uint8_t byte){
 }
 
 void DMXWire::masterTXcallback(){
-	
 	for(int i = 0; i < DMXWIRE_PACKETS; i++){
 		packetNo = i;
 		setPacket();	//send slave, which packet is being send
