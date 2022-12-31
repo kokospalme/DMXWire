@@ -12,7 +12,7 @@
 #include <esp_timer.h>
 #include <Ticker.h>
 
-#define DMXWIRE_INTERVAL_MS        1000
+#define DMXWIRE_INTERVAL_MS	30	// 20 ... 40ms = 50 ... 25 FPS
 
 #define DMXWIRE_BYTES_PER_PACKET 32
 #define DMXWIRE_PACKETS 512 / DMXWIRE_BYTES_PER_PACKET
@@ -28,7 +28,11 @@ public:
 	static void write(uint16_t channel, uint8_t byte);
 	static uint8_t read(uint16_t channel);
 
+		/** IR stuff **/
+	static Ticker IRtimer;	// siehe: https://github.com/espressif/arduino-esp32/issues/3465
 	virtual ~DMXWire();
+
+	static void masterTXcallback();
 private:
 	static uint8_t packets[DMXWIRE_BYTES_PER_PACKET][DMXWIRE_PACKETS];
 	static uint8_t packetNo;
@@ -38,12 +42,10 @@ private:
 	static void setPacket();
 	static void sendPacket();
 
-	/** IR stuff **/
-	static Ticker IRtimer;	// siehe: https://github.com/espressif/arduino-esp32/issues/3465
-	static void IRhandler();
 	static int packetBusy;
 
 
 }; extern DMXWire Dmxwire;
+
 
 #endif /* LIBRARIES_DMXWIRE_DMXWIRE_H_ */

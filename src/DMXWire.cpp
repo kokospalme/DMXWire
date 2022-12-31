@@ -19,37 +19,42 @@ DMXWire::DMXWire() {
 void DMXWire::setClock(uint32_t frequency){
 	Wire.setClock(frequency);
 }
+void IRhandler(DMXWire* instance){
+
+}
 
 void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress){
 	Wire.begin(scl, sda);
 	DMXWire::slaveAddress = slaveaddress;
 
-	// esp_timer_create(&_timerConfig, &IRtimer);
-	IRtimer.attach(DMXWIRE_INTERVAL_MS, IRhandler);
+	// // esp_timer_create(&_timerConfig, &IRtimer);
+	// IRtimer.attach(DMXWIRE_INTERVAL_MS, IRhandler);
 
-	if (IRtimer.active())
-	{
-		Serial.print(F("Starting timer IRsend_DMX OK, millis() = "));
-		Serial.println(millis());
-	}
-	else
-		Serial.println(F("Can't set timer to IRsend_DMX"));
+	// if (IRtimer.active())
+	// {
+	// 	Serial.print(F("Starting timer IRsend_DMX OK, millis() = "));
+	// 	Serial.println(millis());
+	// }
+	// else
+	// 	Serial.println(F("Can't set timer to IRsend_DMX"));
 }
 
 uint8_t DMXWire::read(uint16_t channel){
 	if(channel < 1 || channel > 512) return 0;	//dmx borders
 
+return 0;
 }
 
 void DMXWire::write(uint16_t channel, uint8_t byte){
 
 }
 
-void DMXWire::IRhandler(){
+void DMXWire::masterTXcallback(){
+	
 	for(int i = 0; i < DMXWIRE_PACKETS; i++){
 		packetNo = i;
-		DMXWire::setPacket();
-		DMXWire::requestData();
+		setPacket();	//send slave, which packet is being send
+		sendPacket();	//send packet
 	}
 }
 
