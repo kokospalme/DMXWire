@@ -13,7 +13,10 @@ uint8_t DMXWire::slaveAddress = 1;	//slave's address
 int DMXWire::packetBusy =  DMXWIRE_NOTBUSY;
 
 DMXWire::DMXWire() {
-
+	for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
+		for(int j = 0; j < DMXWIRE_PACKETS; j++){
+			packets[i][j] = 0;
+	}
 }
 
 void DMXWire::setClock(uint32_t frequency){

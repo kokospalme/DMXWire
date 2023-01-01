@@ -12,9 +12,9 @@
 #include <esp_timer.h>
 #include <Ticker.h>
 
-#define DMXWIRE_INTERVAL_MS	30	// 20 ... 40ms = 50 ... 25 FPS
+#define DMXWIRE_INTERVAL_MS	300	// 20 ... 40ms = 50 ... 25 FPS
 
-#define DMXWIRE_BYTES_PER_PACKET 32
+#define DMXWIRE_BYTES_PER_PACKET 16
 #define DMXWIRE_PACKETS 512 / DMXWIRE_BYTES_PER_PACKET
 
 #define DMXWIRE_NOTBUSY -1
