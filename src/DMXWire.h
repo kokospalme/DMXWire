@@ -12,10 +12,12 @@
 #include <esp_timer.h>
 #include <Ticker.h>
 
-#define DMXWIRE_INTERVAL_MS	300	// 20 ... 40ms = 50 ... 25 FPS
+#define DMXWIRE_INTERVAL_MS	30	// 20 ... 40ms = 50 ... 25 FPS
 
-#define DMXWIRE_BYTES_PER_PACKET 16
-#define DMXWIRE_PACKETS 512 / DMXWIRE_BYTES_PER_PACKET
+#define DMXWIRE_CHANNEL_PER_PACKET 16
+#define DMXWIRE_HEAD 1
+#define DMXWIRE_BYTES_PER_PACKET DMXWIRE_CHANNEL_PER_PACKET + DMXWIRE_HEAD
+#define DMXWIRE_PACKETS 512 / DMXWIRE_CHANNEL_PER_PACKET
 
 #define DMXWIRE_NOTBUSY -1
 
@@ -34,7 +36,7 @@ public:
 
 	static void masterTXcallback();
 private:
-	static uint8_t packets[DMXWIRE_BYTES_PER_PACKET][DMXWIRE_PACKETS];
+	static uint8_t packets[DMXWIRE_PACKETS][DMXWIRE_BYTES_PER_PACKET];
 	static uint8_t packetNo;
 	static uint8_t slaveAddress;	//slave's address
 

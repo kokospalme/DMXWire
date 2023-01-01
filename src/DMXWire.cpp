@@ -7,7 +7,7 @@
 
 #include "DMXWire.h"
 
-uint8_t DMXWire::packets[DMXWIRE_BYTES_PER_PACKET][DMXWIRE_PACKETS];
+uint8_t DMXWire::packets[DMXWIRE_PACKETS][DMXWIRE_BYTES_PER_PACKET];
 uint8_t DMXWire::packetNo = 0;
 uint8_t DMXWire::slaveAddress = 1;	//slave's address
 int DMXWire::packetBusy =  DMXWIRE_NOTBUSY;
@@ -15,13 +15,15 @@ int DMXWire::packetBusy =  DMXWIRE_NOTBUSY;
 DMXWire::DMXWire() {
 	for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
 		for(int j = 0; j < DMXWIRE_PACKETS; j++){
-			packets[i][j] = 0;
+			packets[j][i] = 0;
+		}
 	}
 }
 
 void DMXWire::setClock(uint32_t frequency){
 	Wire.setClock(frequency);
 }
+
 void IRhandler(DMXWire* instance){
 
 }
@@ -40,15 +42,17 @@ return 0;
 void DMXWire::write(uint16_t channel, uint8_t value){
 	if(channel < 1 || channel > 512) return;	//dmx borders
 
-	uint16_t _packetNo = (channel-1) / DMXWIRE_BYTES_PER_PACKET;
-	uint16_t _byteNo = (channel - 1) - _packetNo * DMXWIRE_BYTES_PER_PACKET;
-	packets[_byteNo][_packetNo] = value;
+	uint16_t _packetNo = (channel-1) / DMXWIRE_CHANNEL_PER_PACKET;
+	uint16_t _byteNo = (channel - 1) - _packetNo * DMXWIRE_CHANNEL_PER_PACKET;
+
+	packets[_packetNo][DMXWIRE_HEAD + _byteNo] = value;
 }
 
 void DMXWire::masterTXcallback(){
-	for(int i = 0; i < DMXWIRE_PACKETS; i++){
+	for(int i = 0; i < 1; i++){	//ToDo: später mehr
 		packetNo = i;
-		setPacket();	//send slave, which packet is being send
+		packets[i][0] = packetNo;
+		// setPacket();	//send slave, which packet is being send
 		sendPacket();	//send packet
 	}
 	
@@ -66,7 +70,7 @@ void DMXWire::sendPacket(){	//master TX
 	Wire.write(packets[packetNo], DMXWIRE_BYTES_PER_PACKET);
 	Wire.endTransmission();    // stop transmitting
 	packetBusy = DMXWIRE_NOTBUSY;
-	if(packetNo == 0)Serial.printf("%u \t%u \t%u \t%u \t%u \n", packets[0][packetNo], packets[1][packetNo], packets[2][packetNo], packets[3][packetNo], packets[4][packetNo]);
+	if(packetNo == 0)Serial.printf("%u \t%u \t%u \t%u \t%u \n", packets[packetNo][0], packets[packetNo][1], packets[packetNo][2], packets[packetNo][3], packets[packetNo][4]);
 }
 
 
