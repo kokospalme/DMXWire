@@ -25,16 +25,19 @@ class DMXWire {
 public:
 	DMXWire();
 	static void setClock(uint32_t frequency);	//set I2C clock
-	static void beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress );
-	// static void beginMasterRX(uint8_t scl,uint8_t sda );
+	static void beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock);
+	static void beginSlaveRX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock);
+
 	static void write(uint16_t channel, uint8_t value);
 	static uint8_t read(uint16_t channel);
+	static unsigned long getDuration();
 
 		/** IR stuff **/
 	static Ticker IRtimer;	// siehe: https://github.com/espressif/arduino-esp32/issues/3465
 	virtual ~DMXWire();
 
 	static void masterTXcallback();
+	static void slaveRXcallback(int bufSize);
 private:
 	static uint8_t packets[DMXWIRE_PACKETS][DMXWIRE_BYTES_PER_PACKET];
 	static uint8_t packetNo;
@@ -44,7 +47,9 @@ private:
 	static void setPacket();
 	static void sendPacket();
 
-	static int packetBusy;
+	static int packetBusy;	//is packet busy? 
+	static unsigned long duration;	//capture framerate
+	static unsigned long timestamp;
 
 }; extern DMXWire Dmxwire;
 

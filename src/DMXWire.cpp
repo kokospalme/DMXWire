@@ -11,6 +11,8 @@ uint8_t DMXWire::packets[DMXWIRE_PACKETS][DMXWIRE_BYTES_PER_PACKET];
 uint8_t DMXWire::packetNo = 0;
 uint8_t DMXWire::slaveAddress = 1;	//slave's address
 int DMXWire::packetBusy =  DMXWIRE_NOTBUSY;
+unsigned long DMXWire::duration = 0;
+unsigned long DMXWire::timestamp = 0;
 
 DMXWire::DMXWire() {
 	for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
@@ -28,8 +30,13 @@ void IRhandler(DMXWire* instance){
 
 }
 
-void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress){
-	Wire.begin(scl, sda);
+void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
+	Wire.begin(slaveaddress, scl, sda,clock);
+	DMXWire::slaveAddress = slaveaddress;
+}
+
+void DMXWire::beginSlaveRX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
+	Wire.begin(slaveaddress, scl, sda,clock);
 	DMXWire::slaveAddress = slaveaddress;
 }
 
@@ -37,6 +44,10 @@ uint8_t DMXWire::read(uint16_t channel){
 	if(channel < 1 || channel > 512) return 0;	//dmx borders
 
 return 0;
+}
+
+unsigned long DMXWire::getDuration(){
+	return duration;
 }
 
 void DMXWire::write(uint16_t channel, uint8_t value){
@@ -49,12 +60,46 @@ void DMXWire::write(uint16_t channel, uint8_t value){
 }
 
 void DMXWire::masterTXcallback(){
-	for(int i = 0; i < 1; i++){	//ToDo: später mehr
+	for(int i = 0; i < DMXWIRE_PACKETS; i++){	//ToDo: später mehr
 		packetNo = i;
-		packets[i][0] = packetNo;
-		// setPacket();	//send slave, which packet is being send
+		packets[i][0] = packetNo;	//head: info which packet is being send
 		sendPacket();	//send packet
 	}
+	
+}
+
+void DMXWire::slaveRXcallback(int bufSize){
+	uint8_t _counter = 0;
+	uint8_t buffer[bufSize];
+	
+	for(int i=0; i < bufSize; i++){
+		buffer[i] = Wire.read();
+		if(buffer[0] == 0) timestamp = millis();
+		// Serial.print(buffer[i], HEX);
+	}
+	// Serial.println("");
+	if(bufSize >= DMXWIRE_BYTES_PER_PACKET) return;	//return if buffer too large
+	packetNo = buffer[0];
+
+	if(packetNo < DMXWIRE_PACKETS){	//write buffer to packet
+
+	if(buffer[0] == DMXWIRE_PACKETS-1) duration = millis() - timestamp;
+
+		for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
+			packets[packetNo][i] = buffer[i];
+		}
+		
+	}else{	//else: setting codes or unknown
+		switch(packetNo){
+			case 250:	//ToDo: codes für settings etc
+			Serial.println("Setting XY changed...");
+			break;
+			default:
+			Serial.println("unknown command");
+			break;
+		}
+	}
+	packetNo = DMXWIRE_NOTBUSY;
 	
 }
 
