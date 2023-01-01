@@ -25,7 +25,7 @@ public:
 	static void setClock(uint32_t frequency);	//set I2C clock
 	static void beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress );
 	// static void beginMasterRX(uint8_t scl,uint8_t sda );
-	static void write(uint16_t channel, uint8_t byte);
+	static void write(uint16_t channel, uint8_t value);
 	static uint8_t read(uint16_t channel);
 
 		/** IR stuff **/
