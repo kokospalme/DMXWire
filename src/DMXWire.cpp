@@ -31,7 +31,7 @@ void IRhandler(DMXWire* instance){
 }
 
 void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
-	Wire.begin(sda, scl, clock);
+	Wire.begin(sda, scl,clock);
 	DMXWire::slaveAddress = slaveaddress;
 }
 
