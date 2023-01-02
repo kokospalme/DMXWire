@@ -38,13 +38,17 @@ void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint3
 
 void DMXWire::beginSlaveRX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
 	Wire.begin(slaveaddress, scl, sda,clock);
+	Wire.onReceive(DMXWire::slaveRXcallback); // register event
 	DMXWire::slaveAddress = slaveaddress;
 }
 
 uint8_t DMXWire::read(uint16_t channel){
 	if(channel < 1 || channel > 512) return 0;	//dmx borders
 
-return 0;
+	uint16_t _packetNo = (channel-1) / DMXWIRE_CHANNEL_PER_PACKET;
+	uint16_t _byteNo = (channel - 1) - _packetNo * DMXWIRE_CHANNEL_PER_PACKET;
+
+	return packets[_packetNo][DMXWIRE_HEAD + _byteNo];
 }
 
 unsigned long DMXWire::getDuration(){
@@ -75,7 +79,7 @@ void DMXWire::slaveRXcallback(int bufSize){
 	
 	for(int i=0; i < bufSize; i++){
 		buffer[i] = Wire.read();
-		if(buffer[0] == 0) timestamp = millis();
+		if(buffer[0] == 0){timestamp = millis();
 		// Serial.print(buffer[i], HEX);
 	}
 	// Serial.println("");
@@ -84,24 +88,31 @@ void DMXWire::slaveRXcallback(int bufSize){
 
 	if(packetNo < DMXWIRE_PACKETS){	//write buffer to packet
 
-	if(buffer[0] == DMXWIRE_PACKETS-1) duration = millis() - timestamp;
+		if(buffer[0] == DMXWIRE_PACKETS-1) duration = millis() - timestamp;
 
-		for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
-			packets[packetNo][i] = buffer[i];
-		}
-		
-	}else{	//else: setting codes or unknown
-		switch(packetNo){
-			case 250:	//ToDo: codes für settings etc
-			Serial.println("Setting XY changed...");
-			break;
-			default:
-			Serial.println("unknown command");
-			break;
+			for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
+				packets[packetNo][i] = buffer[i];
+			}
+
+			if(buffer[0] == 0){
+				Serial.print(Dmxwire.getDuration());
+				Serial.printf("\t%u \t%u \t%u \t%u \t%u \n", packets[0][1], packets[0][2], packets[0][3], packets[0][4], packets[0][5]);
+			}
+
+			
+		}else{	//else: setting codes or unknown
+			switch(packetNo){
+				case 250:	//ToDo: codes für settings etc
+				Serial.println("Setting XY changed...");
+				break;
+				default:
+				Serial.println("unknown command");
+				break;
+			}
 		}
 	}
-	packetNo = DMXWIRE_NOTBUSY;
-	
+
+	packetNo = DMXWIRE_NOTBUSY;	//reset "busy-variable"
 }
 
 void DMXWire::setPacket(){	//master TX
