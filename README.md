@@ -22,10 +22,13 @@ This work is licensed under a
 * works with other libraries?! (DMX512 & NRF24 from https://forum.arduino.cc/t/transmitting-receiving-dmx-using-nrf24l01-radio-transceivers/203255)
 
 ### Tests & examples
+#### Code
 * MasterTX_esp32.ino: sucessfully tested on ESP32 
 * SlaveRX_esp32.ino: sucessfully tested on ESP32 C3
 * SlaveRX_TX512_simple.ino: sucessfully tested on ESP32 C3 with full 512 channel
-* SlaveRX_
+#### Schematic
+* DMX schematic from http://www.mathertel.de/Arduino/DMXShield.aspx
+<img src="http://www.mathertel.de/Arduino/DMXShield/DMXShieldSchema.png">
 
 ## used libraries
 Many thanks to Khoih-prog and luksal
