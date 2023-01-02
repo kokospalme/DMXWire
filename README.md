@@ -1,5 +1,6 @@
 # DMXWire
-kokospalme/DMXWire
+#### kokospalme/DMXWire
+
 Arduino Library to send and receive DMX over I2C/Wire library
 Shield: [![CC BY 4.0][cc-by-shield]][cc-by]
 
