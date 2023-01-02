@@ -24,6 +24,7 @@
 #define DMXWIRE_LED_OFF 0
 #define DMXWIRE_LED_RX 1
 #define DMXWIRE_LED_TX 2
+#define DMXWIRE_LED_AUTO 3
 
 #define DMXWIRE_PACKETTIMEOUT_MS 500 //ms
 
