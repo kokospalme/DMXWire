@@ -31,12 +31,12 @@ void IRhandler(DMXWire* instance){
 }
 
 void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
-	Wire.begin(slaveaddress, scl, sda,clock);
+	Wire.begin(sda, scl, clock);
 	DMXWire::slaveAddress = slaveaddress;
 }
 
 void DMXWire::beginSlaveRX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
-	Wire.begin(slaveaddress, scl, sda,clock);
+	Wire.begin(slaveaddress, sda, scl,clock);
 	Wire.onReceive(DMXWire::slaveRXcallback); // register event
 	DMXWire::slaveAddress = slaveaddress;
 }
