@@ -31,9 +31,9 @@ This work is licensed under a
 <img src="http://www.mathertel.de/Arduino/DMXShield/DMXShieldSchema.png">
 
 ## used libraries
-Many thanks to Khoih-prog and luksal
-https://github.com/espressif/arduino-esp32/tree/master/libraries/Ticker
-https://github.com/espressif/arduino-esp32/tree/master/libraries/Wire
-https://github.com/khoih-prog/ESP32TimerInterrupt
-fork of https://github.com/luksal/ESP32-DMX
+Many thanks to Khoih-prog and luksal!
+- https://github.com/espressif/arduino-esp32/tree/master/libraries/Ticker
+- https://github.com/espressif/arduino-esp32/tree/master/libraries/Wire
+- https://github.com/khoih-prog/ESP32TimerInterrupt
+- fork of https://github.com/luksal/ESP32-DMX
 
