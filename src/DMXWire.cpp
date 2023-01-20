@@ -12,13 +12,15 @@ uint8_t DMXWire::packetNo = 0;
 uint8_t DMXWire::slaveAddress = 1;	//slave's address
 int DMXWire::packetBusy =  DMXWIRE_NOTBUSY;
 unsigned long DMXWire::duration = 0;
-unsigned long DMXWire::timestamp = 0;
+unsigned long DMXWire::timestamp_wire = 0;
+unsigned long DMXWire::timestamp_dmx512 = 0;
+unsigned long DMXWire::timestamp_nrf24 = 0;
 dmxwire_settings_t DMXWire::config;
 SemaphoreHandle_t DMXWire::sync_dmx;
-
+RF24 DMXWire::radio;
 
 DMXWire::DMXWire() {
-   sync_dmx = xSemaphoreCreateMutex(); //semaphore
+
 	for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
 		for(int j = 0; j < DMXWIRE_PACKETS; j++){
 			packets[j][i] = 0;
@@ -30,30 +32,30 @@ void DMXWire::setClock(uint32_t frequency){
 	Wire.setClock(frequency);
 }
 
-void DMXWire::setLed0(int pin, uint8_t mode){	//set pin and mode for led0
-	config.led0pin = pin;
-	config.led0Mode = mode;
-	pinMode(config.led0pin, OUTPUT);
-	digitalWrite(config.led0pin, LOW);
+void DMXWire::setLedRx(int pin, uint8_t mode){	//set pin and mode for ledRx
+	config.ledRxpin = pin;
+	config.ledRxMode = mode;
+	pinMode(config.ledRxpin, OUTPUT);
+	digitalWrite(config.ledRxpin, LOW);
 }
 
-void DMXWire::setLed0(uint8_t mode){	//set mode for led0
-	config.led0Mode = mode;
-	pinMode(config.led0pin, OUTPUT);
-	digitalWrite(config.led0pin, LOW);
+void DMXWire::setLedRx(uint8_t mode){	//set mode for ledRx
+	config.ledRxMode = mode;
+	pinMode(config.ledRxpin, OUTPUT);
+	digitalWrite(config.ledRxpin, LOW);
 }
 
-void DMXWire::setLed1(int pin, uint8_t mode){	//set pin and mode for led1
-	config.led1pin = pin;
-	config.led1Mode = mode;
-	pinMode(config.led1pin, OUTPUT);
-	digitalWrite(config.led1pin, LOW);
+void DMXWire::setLedTx(int pin, uint8_t mode){	//set pin and mode for ledTx
+	config.ledTxpin = pin;
+	config.ledTxMode = mode;
+	pinMode(config.ledTxpin, OUTPUT);
+	digitalWrite(config.ledTxpin, LOW);
 }
 
-void DMXWire::setLed1(uint8_t mode){	//set mode for led0
-	config.led1Mode = mode;
-	pinMode(config.led1pin, OUTPUT);
-	digitalWrite(config.led1pin, LOW);
+void DMXWire::setLedTx(uint8_t mode){	//set mode for ledRx
+	config.ledTxMode = mode;
+	pinMode(config.ledTxpin, OUTPUT);
+	digitalWrite(config.ledTxpin, LOW);
 }
 
 void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
@@ -73,25 +75,51 @@ uint8_t DMXWire::read(uint16_t channel){
 	uint16_t _packetNo = (channel-1) / DMXWIRE_CHANNEL_PER_PACKET;
 	uint16_t _byteNo = (channel - 1) - _packetNo * DMXWIRE_CHANNEL_PER_PACKET;
 
-   // xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
+   xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
 	return packets[_packetNo][DMXWIRE_HEAD + _byteNo];
-   // xSemaphoreGive(sync_dmx);
+   xSemaphoreGive(sync_dmx);
 }
 
 unsigned long DMXWire::getDuration(){
 	return duration;
 }
-void DMXWire::setTimout(unsigned long timeout_ms){
-	config.packettimeout_ms = timeout_ms;
+
+void DMXWire::setTimout_wire(unsigned long timeout_ms){
+	config.timeout_wire_ms = timeout_ms;
 }
 
-bool DMXWire::getTimeout(){
-	if(millis() > timestamp + config.packettimeout_ms){
-		if(config.led0Mode == DMXWIRE_LED_TX) digitalWrite(config.led0pin, LOW);
-		if(config.led1Mode == DMXWIRE_LED_TX) digitalWrite(config.led1pin, LOW);
+void DMXWire::setTimout_dmx512(unsigned long timeout_ms){
+	config.timeout_dmx512_ms = timeout_ms;
+}
 
-		if(config.led0Mode == DMXWIRE_LED_RX) digitalWrite(config.led0pin, LOW);
-		if(config.led1Mode == DMXWIRE_LED_RX) digitalWrite(config.led1pin, LOW);
+void DMXWire::setTimout_nrf24(unsigned long timeout_ms){
+	config.timeout_nrf24_ms = timeout_ms;
+}
+
+bool DMXWire::getTimeout_wire(){
+	if(millis() > timestamp_wire + config.timeout_wire_ms){
+		if(config.ledRxMode == DMXWIRE_LED_WIRE) digitalWrite(config.ledRxpin, LOW);
+		if(config.ledTxMode == DMXWIRE_LED_WIRE) digitalWrite(config.ledTxpin, LOW);
+		return true;
+	}else{	//no timeout
+		return false;
+	}
+}
+
+bool DMXWire::getTimeout_dmx512(){
+	if(millis() > timestamp_dmx512 + config.timeout_dmx512_ms){
+		if(config.ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledRxpin, LOW);
+		if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
+		return true;
+	}else{	//no timeout
+		return false;
+	}
+}
+
+bool DMXWire::getTimeout_nrf24(){
+	if(millis() > timestamp_nrf24 + config.timeout_nrf24_ms){
+		if(config.ledRxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledRxpin, LOW);
+		if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, LOW);
 		return true;
 	}else{	//no timeout
 		return false;
@@ -108,8 +136,8 @@ void DMXWire::write(uint16_t channel, uint8_t value){
 }
 
 void DMXWire::masterTXcallback(){
-	if(config.led0Mode == DMXWIRE_LED_TX) digitalWrite(config.led0pin, HIGH);
-	if(config.led1Mode == DMXWIRE_LED_TX) digitalWrite(config.led1pin, HIGH);
+	if(config.ledRxMode == DMXWIRE_LED_TX) digitalWrite(config.ledRxpin, HIGH);
+	if(config.ledTxMode == DMXWIRE_LED_TX) digitalWrite(config.ledTxpin, HIGH);
 
 	for(int i = 0; i < DMXWIRE_PACKETS; i++){	//ToDo: später mehr
       xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
@@ -119,8 +147,8 @@ void DMXWire::masterTXcallback(){
       xSemaphoreGive(sync_dmx);
 	}
 
-	if(config.led0Mode == DMXWIRE_LED_TX) digitalWrite(config.led0pin, LOW);
-	if(config.led1Mode == DMXWIRE_LED_TX) digitalWrite(config.led1pin, LOW);
+	if(config.ledRxMode == DMXWIRE_LED_TX) digitalWrite(config.ledRxpin, LOW);
+	if(config.ledTxMode == DMXWIRE_LED_TX) digitalWrite(config.ledTxpin, LOW);
 }
 
 void DMXWire::slaveRXcallback(int bufSize){
@@ -136,8 +164,8 @@ void DMXWire::slaveRXcallback(int bufSize){
 
 		if(buffer[0] == 0){
 			timestamp = millis();
-			if(config.led0Mode == DMXWIRE_LED_RX) digitalWrite(config.led0pin, HIGH);
-			if(config.led1Mode == DMXWIRE_LED_RX) digitalWrite(config.led1pin, HIGH);
+			if(config.ledRxMode == DMXWIRE_LED_RX) digitalWrite(config.ledRxpin, HIGH);
+			if(config.ledTxMode == DMXWIRE_LED_RX) digitalWrite(config.ledTxpin, HIGH);
 		}
       xSemaphoreGive(sync_dmx);
 		// Serial.print(buffer[i], HEX);
@@ -153,8 +181,8 @@ void DMXWire::slaveRXcallback(int bufSize){
 
 		if(buffer[0] == DMXWIRE_PACKETS-1){
 			duration = millis() - timestamp;
-			if(config.led0Mode == DMXWIRE_LED_RX) digitalWrite(config.led0pin, LOW);
-			if(config.led1Mode == DMXWIRE_LED_RX) digitalWrite(config.led1pin, LOW);
+			if(config.ledRxMode == DMXWIRE_LED_RX) digitalWrite(config.ledRxpin, LOW);
+			if(config.ledTxMode == DMXWIRE_LED_RX) digitalWrite(config.ledTxpin, LOW);
 		}
 
 			for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
