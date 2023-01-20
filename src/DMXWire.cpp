@@ -60,7 +60,7 @@ void DMXWire::setLedTx(uint8_t mode){	//set mode for ledRx
 }
 
 void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
-   // sync_dmx = xSemaphoreCreateMutex(); //create semaphore
+   sync_dmx = xSemaphoreCreateMutex(); //create semaphore
 	Wire.begin(sda, scl,clock);
 	DMXWire::slaveAddress = slaveaddress;
 }
