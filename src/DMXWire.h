@@ -75,6 +75,8 @@ private:
 
 	static dmxwire_settings_t config;
 
+   //task safety
+   static SemaphoreHandle_t sync_dmx;
 
 }; extern DMXWire Dmxwire;
 

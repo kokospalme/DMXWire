@@ -55,23 +55,27 @@ void setup(){
 
 	switch(config.ioMode){	//input/output mode
 		case LC1DMX_MODE_OFF:	//mode off [Wire slave, no output]
-		Dmxwire.beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);	//ToDo: umdrehen später!	
+		Dmxwire.beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);	
 		if(config.led0Mode == DMXWIRE_LED_AUTO)Dmxwire.setLed0(LED0_PIN, DMXWIRE_LED_OFF);
 		break;
 
 		case LC1DMX_MODE_TX_DMX512:	//mode tx dmx512 [Wire slave, DMX TX]
-		Dmxwire.beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);	//ToDo: umdrehen später!
+		Dmxwire.beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
 		if(config.led0Mode == DMXWIRE_LED_AUTO)Dmxwire.setLed0(LED0_PIN, DMXWIRE_LED_RX);
 		DMX::Initialize(output);
 		break;
 
 		case LC1DMX_MODE_TX_NRF24:	//mode tx nrf24 [Wire slave, NRF24 TX]
-		Dmxwire.beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);	//ToDo: umdrehen später!
+		Dmxwire.beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
 		if(config.led0Mode == DMXWIRE_LED_AUTO)Dmxwire.setLed0(LED0_PIN, DMXWIRE_LED_RX);
+
+
+
+      
 		break;
 
 		default:	//default [Wire slave, no output]
-		Dmxwire.beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);	//ToDo: umdrehen später!
+		Dmxwire.beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
 		if(config.led0Mode == DMXWIRE_LED_AUTO)Dmxwire.setLed0(LED0_PIN, DMXWIRE_LED_RX);
 		break;
 	}

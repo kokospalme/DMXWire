@@ -5,10 +5,6 @@
  */
 #include "Arduino.h"
 #include <DMXWire.h>
-//#include <LC1.h>
-//#include <FastLED.h>
-//#include <WiFi.h>
-//#include <tinyXML.h>
 
 #define I2C_CLOCK 400000	// ToDo: 100000??
 #define DMXWIRE_SLAVEADDRESS 8
