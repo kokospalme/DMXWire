@@ -17,17 +17,19 @@ This work is licensed under a
 * timing: 16...18ms for transmitting 512 bytes in 16+1 packets
 
 ## ToDos
-* threadsafety with mutex (like in DMX library: https://github.com/luksal/ESP32-DMX) for multicore cpus
+* [X] threadsafety with mutex (like in DMX library: https://github.com/luksal/ESP32-DMX) for multicore cpus
+* [ ] settings over Wire
+* [ ] Wiki pages
 * I2C transaction with locks (also threadsafety)
 * works with other libraries?! (DMX512 & NRF24 from https://forum.arduino.cc/t/transmitting-receiving-dmx-using-nrf24l01-radio-transceivers/203255)
 
 ### Tests & examples
 #### Code
-* MasterTX_esp32.ino: sucessfully tested on ESP32 
+* MasterTX_LC1_faderdemo.ino: sucessfully tested on ESP32 
 * SlaveRX_esp32.ino: sucessfully tested on ESP32 C3
 * SlaveRX_TX512_simple.ino: sucessfully tested on ESP32 C3 with full 512 channel
-#### Schematic
-* DMX schematic from http://www.mathertel.de/Arduino/DMXShield.aspx
+#### Schematic (LC1 DMX board)
+* DMX schematic inspired by http://www.mathertel.de/Arduino/DMXShield.aspx
 <img src="http://www.mathertel.de/Arduino/DMXShield/DMXShieldSchema.png">
 
 ## used libraries
