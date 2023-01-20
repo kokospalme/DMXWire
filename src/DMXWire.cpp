@@ -18,7 +18,7 @@ SemaphoreHandle_t DMXWire::sync_dmx;
 
 
 DMXWire::DMXWire() {
-   sync_dmx = xSemaphoreCreateMutex(); //semaphore
+
 	for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
 		for(int j = 0; j < DMXWIRE_PACKETS; j++){
 			packets[j][i] = 0;
@@ -57,11 +57,13 @@ void DMXWire::setLed1(uint8_t mode){	//set mode for led0
 }
 
 void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
+   sync_dmx = xSemaphoreCreateMutex(); //create semaphore
 	Wire.begin(sda, scl,clock);
 	DMXWire::slaveAddress = slaveaddress;
 }
 
 void DMXWire::beginSlaveRX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
+   sync_dmx = xSemaphoreCreateMutex(); //create semaphore
 	Wire.begin(slaveaddress, sda, scl,clock);
 	Wire.onReceive(DMXWire::slaveRXcallback); // register event
 	DMXWire::slaveAddress = slaveaddress;
@@ -73,9 +75,9 @@ uint8_t DMXWire::read(uint16_t channel){
 	uint16_t _packetNo = (channel-1) / DMXWIRE_CHANNEL_PER_PACKET;
 	uint16_t _byteNo = (channel - 1) - _packetNo * DMXWIRE_CHANNEL_PER_PACKET;
 
-   // xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
+   xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
 	return packets[_packetNo][DMXWIRE_HEAD + _byteNo];
-   // xSemaphoreGive(sync_dmx);
+   xSemaphoreGive(sync_dmx);
 }
 
 unsigned long DMXWire::getDuration(){
@@ -104,7 +106,12 @@ void DMXWire::write(uint16_t channel, uint8_t value){
 	uint16_t _packetNo = (channel-1) / DMXWIRE_CHANNEL_PER_PACKET;
 	uint16_t _byteNo = (channel - 1) - _packetNo * DMXWIRE_CHANNEL_PER_PACKET;
 
+
+   // Serial.println("take Semaphore...");
+   // delay(50);
+   xSemaphoreTake(sync_dmx,portMAX_DELAY);   //task safety
 	packets[_packetNo][DMXWIRE_HEAD + _byteNo] = value;
+   xSemaphoreGive(sync_dmx);
 }
 
 void DMXWire::masterTXcallback(){
@@ -112,11 +119,14 @@ void DMXWire::masterTXcallback(){
 	if(config.led1Mode == DMXWIRE_LED_TX) digitalWrite(config.led1pin, HIGH);
 
 	for(int i = 0; i < DMXWIRE_PACKETS; i++){	//ToDo: später mehr
-      xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
 		packetNo = i;
+
+      xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
 		packets[i][0] = packetNo;	//head: info which packet is being send
-		sendPacket();	//send packet
       xSemaphoreGive(sync_dmx);
+
+		sendPacket();	//send packet
+      
 	}
 
 	if(config.led0Mode == DMXWIRE_LED_TX) digitalWrite(config.led0pin, LOW);
