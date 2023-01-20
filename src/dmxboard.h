@@ -1,3 +1,6 @@
+#ifndef DMXBOARD_H_
+#define DMXBOARD_H_
+
 #include <Arduino.h>
 #include "DMXWire.h"
 
@@ -51,4 +54,4 @@ struct nrf24Data_t{
 };
 
 
-
+#endif
