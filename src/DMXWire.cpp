@@ -184,7 +184,7 @@ void DMXWire::sendPacket(){	//master TX
 	Wire.write(packets[packetNo], DMXWIRE_BYTES_PER_PACKET);
 	Wire.endTransmission();    // stop transmitting
 	packetBusy = DMXWIRE_NOTBUSY;
-	if(packetNo == 0)Serial.printf("%u \t%u \t%u \t%u \t%u \n", packets[packetNo][0], packets[packetNo][1], packets[packetNo][2], packets[packetNo][3], packets[packetNo][4]);
+	if(packetNo == 0)Serial.printf("P%u: %u \t%u \t%u \t%u \t%u\n", packets[packetNo][0], packets[packetNo][1], packets[packetNo][2], packets[packetNo][3], packets[packetNo][4], packets[packetNo][5]);
 }
 
 
