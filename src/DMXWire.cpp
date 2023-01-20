@@ -14,9 +14,11 @@ int DMXWire::packetBusy =  DMXWIRE_NOTBUSY;
 unsigned long DMXWire::duration = 0;
 unsigned long DMXWire::timestamp = 0;
 dmxwire_settings_t DMXWire::config;
+SemaphoreHandle_t DMXWire::sync_dmx;
 
 
 DMXWire::DMXWire() {
+   sync_dmx = xSemaphoreCreateMutex(); //semaphore
 	for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
 		for(int j = 0; j < DMXWIRE_PACKETS; j++){
 			packets[j][i] = 0;
@@ -71,7 +73,9 @@ uint8_t DMXWire::read(uint16_t channel){
 	uint16_t _packetNo = (channel-1) / DMXWIRE_CHANNEL_PER_PACKET;
 	uint16_t _byteNo = (channel - 1) - _packetNo * DMXWIRE_CHANNEL_PER_PACKET;
 
+   // xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
 	return packets[_packetNo][DMXWIRE_HEAD + _byteNo];
+   // xSemaphoreGive(sync_dmx);
 }
 
 unsigned long DMXWire::getDuration(){
@@ -108,9 +112,11 @@ void DMXWire::masterTXcallback(){
 	if(config.led1Mode == DMXWIRE_LED_TX) digitalWrite(config.led1pin, HIGH);
 
 	for(int i = 0; i < DMXWIRE_PACKETS; i++){	//ToDo: später mehr
+      xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
 		packetNo = i;
 		packets[i][0] = packetNo;	//head: info which packet is being send
 		sendPacket();	//send packet
+      xSemaphoreGive(sync_dmx);
 	}
 
 	if(config.led0Mode == DMXWIRE_LED_TX) digitalWrite(config.led0pin, LOW);
@@ -124,12 +130,16 @@ void DMXWire::slaveRXcallback(int bufSize){
 	uint8_t buffer[bufSize];
 	
 	for(int i=0; i < bufSize; i++){
+      xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
 		buffer[i] = Wire.read();
+      
+
 		if(buffer[0] == 0){
 			timestamp = millis();
 			if(config.led0Mode == DMXWIRE_LED_RX) digitalWrite(config.led0pin, HIGH);
 			if(config.led1Mode == DMXWIRE_LED_RX) digitalWrite(config.led1pin, HIGH);
 		}
+      xSemaphoreGive(sync_dmx);
 		// Serial.print(buffer[i], HEX);
 	}
 	// Serial.println("");
@@ -179,9 +189,16 @@ void DMXWire::setPacket(){	//master TX
 }
 
 void DMXWire::sendPacket(){	//master TX
+   xSemaphoreTake(sync_dmx, portMAX_DELAY);  
 	packetBusy = packetNo;
+   uint8_t _packet[DMXWIRE_BYTES_PER_PACKET];
+   for(int i = 0; i <DMXWIRE_BYTES_PER_PACKET; i++){
+      _packet[i] = packets[packetNo][i];
+   }
+   xSemaphoreGive(sync_dmx);
+
 	Wire.beginTransmission(slaveAddress); // transmit to device #xy
-	Wire.write(packets[packetNo], DMXWIRE_BYTES_PER_PACKET);
+	Wire.write(_packet, DMXWIRE_BYTES_PER_PACKET);
 	Wire.endTransmission();    // stop transmitting
 	packetBusy = DMXWIRE_NOTBUSY;
 	if(packetNo == 0)Serial.printf("%u \t%u \t%u \t%u \t%u \n", packets[packetNo][0], packets[packetNo][1], packets[packetNo][2], packets[packetNo][3], packets[packetNo][4]);
