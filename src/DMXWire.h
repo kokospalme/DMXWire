@@ -54,8 +54,8 @@ struct dmxwire_settings_t{
 	int ledRxpin = LED_BUILTIN;	//built in LED
 	int ledTxpin = -1;	//off
 	uint8_t txFramerate_ms = DMXBOARD_TX_FOLLOW; //transmit only when master is sending something
-	uint8_t ledRxMode = DMXBOARD_LED_WIRE;	//indicate RX (default: Wire)
-	uint8_t ledTxMode = DMXBOARD_LED_DMX512;  //indicate TX (default: DMX512)
+	uint8_t ledRxMode = DMXWIRE_LED_WIRE;	//indicate RX (default: Wire)
+	uint8_t ledTxMode = DMXWIRE_LED_DMX512;  //indicate TX (default: DMX512)
 	unsigned long timeout_wire_ms = 500;	//timeouts
 	unsigned long timeout_dmx512_ms = 500;
 	unsigned long timeout_nrf24_ms = 500;
@@ -115,9 +115,12 @@ private:
 	static void sendPacket();
 
    /* dedicated devices */
-   static RF24* radio;
+   static RF24 *radio;
+   static nrf24Data_t nrf24;  //data for nrf24
    static void nrf24InitTX(); //initialize nrf24 module (TX mode)
+   static void nrf24InitRX(); //initialize nrf24 module (RX mode)
    static void nrf24TX();   //transmit over nrf24 module
+   static void nrf24RX();
    
 
 	static int packetBusy;	//is packet busy? 

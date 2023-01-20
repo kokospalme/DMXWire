@@ -24,7 +24,7 @@ void setup(){
 	Serial.println("*** DMXWire Slave RX starting ***");
 
 	DMX::Initialize(output);
-	Dmxwire.setLed0(LED0_PIN, DMXWIRE_LED_RX);
+	// Dmxwire.setLed0(LED0_PIN, DMXWIRE_LED_RX);
 	Dmxwire.beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
 }
 

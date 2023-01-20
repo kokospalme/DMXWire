@@ -16,6 +16,8 @@
 #define DMXBOARD_MODE_TX_NRF24 2
 #define DMXBOARD_MODE_RX_DMX512 3
 #define DMXBOARD_MODE_RX_NRF24 4
+#define DMXBOARD_MODE_DMX512TONRF24 5
+#define DMXBOARD_MODE_NRF24TODMX512 6
 
 /* WIRE STUFF */
 #define I2C_CLOCK 400000
@@ -46,7 +48,7 @@ struct nrf24Data_t{
    uint8_t shadow_DMX[NRF24_MAX_DMX_CHANNELS];  //buffer dmx
    uint8_t timeStamp; 
    bool group_send;
-}
+};
 
 
 
