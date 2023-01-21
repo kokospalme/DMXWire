@@ -211,10 +211,10 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
 				packets[packetNo][i] = buffer[i];
 			}
 
-			if(packetNo== 0){
-				Serial.print(Dmxwire.getDuration());
-				Serial.printf("\t%u \t%u \t%u \t%u \t%u \n", packets[0][1], packets[0][2], packets[0][3], packets[0][4], packets[0][5]);
-			}
+			// if(packetNo== 0){
+			// 	Serial.print(Dmxwire.getDuration());
+			// 	Serial.printf("\t%u \t%u \t%u \t%u \t%u \n", packets[0][1], packets[0][2], packets[0][3], packets[0][4], packets[0][5]);
+			// }
 
 			
 	}else{	//else: setting codes or unknown
@@ -346,16 +346,15 @@ void DMXWire::dmxboardRun(){
       case DMXBOARD_MODE_OFF:
       break;
       case DMXBOARD_MODE_TX_DMX512:
-         // if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, HIGH);
-         // for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
-         //    DMX::Write(i, Dmxwire.read(i));
-         // }
-         // if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
-         // // Serial.println(DMX::Read(1));
-         // delay(16);
+         if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, HIGH);
+         for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
+            
+            DMX::Write(i, Dmxwire.read(i));
+         }
+         if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
+         Serial.printf("DMXBOARD_MODE_TX_DMX512. ch1:%u\n",DMX::Read(1));
+         delay(20);
 
-         Serial.println("DMXBOARD_MODE_TX_DMX512");
-         delay(500);
       break;
       case DMXBOARD_MODE_TX_NRF24:
          // if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, HIGH);
@@ -545,16 +544,16 @@ void DMXWire::serialhandler(){   //
             _cfg.ioMode = DMXBOARD_MODE_OFF;
             Serial.printf("ioMode: idle(%u)\n", _cfg.ioMode);
          }else if(cmd1 == 0){ //ioMode RX dmx512
-            _cfg.ioMode = DMXBOARD_MODE_RX_DMX512;
+            _cfg.ioMode = DMXBOARD_MODE_TX_DMX512;
             Serial.printf("ioMode: RX dmx512(%u)\n", _cfg.ioMode);
          }else if(cmd1 == 1){ //ioMode RX NRF24
-            _cfg.ioMode = DMXBOARD_MODE_RX_NRF24;
+            _cfg.ioMode = DMXBOARD_MODE_TX_NRF24;
             Serial.printf("ioMode: rx nrf24(%u)\n", _cfg.ioMode);
          }else if(cmd1 == 2){ //ioMode TX dmx512
-            _cfg.ioMode = DMXBOARD_MODE_TX_DMX512;
+            _cfg.ioMode = DMXBOARD_MODE_RX_DMX512;
             Serial.printf("ioMode: tx dmx512(%u)\n", _cfg.ioMode);
          }else if(cmd1 == 3){ //ioMode TX NRF24
-            _cfg.ioMode = DMXBOARD_MODE_TX_NRF24;
+            _cfg.ioMode = DMXBOARD_MODE_RX_NRF24;
             Serial.printf("ioMode: tx nrf24(%u)\n", _cfg.ioMode);
          }else if(cmd1 == 4){ //ioMode DMX to NRF24
             _cfg.ioMode = DMXBOARD_MODE_DMX512TONRF24;
