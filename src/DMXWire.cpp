@@ -19,6 +19,7 @@ dmxwire_settings_t DMXWire::config;
 SemaphoreHandle_t DMXWire::sync_dmx;
 SemaphoreHandle_t DMXWire::sync_config;
 nrf24Data_t DMXWire::nrf24;
+Preferences *DMXWire::preferences;
 RF24 *DMXWire::radio;
 
 DMXWire::DMXWire() {
@@ -78,9 +79,7 @@ void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint3
 
 void DMXWire::beginSlaveRX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
    Serial.println("begin Slave RX");
-
    sync_dmx = xSemaphoreCreateMutex(); //create semaphore
-
 	Wire.begin(slaveaddress, sda, scl,clock);
 	Wire.onReceive(DMXWire::slaveRXcallback); // register event
 	DMXWire::slaveAddress = slaveaddress;
@@ -170,7 +169,7 @@ void DMXWire::masterTXcallback(){
 		packets[i][0] = packetNo;	//head: info which packet is being send
       xSemaphoreGive(sync_dmx);
 
-		sendPacket();	//send packet
+		Dmxwire.sendPacket();	//send packet
       
 	}
 
@@ -257,31 +256,24 @@ void DMXWire::sendPacket(){	//master TX
 
 
 
-
-
-
 void DMXWire::dmxboardInit(){
+   // preferences = prefs;
    sync_config = xSemaphoreCreateMutex(); //create semaphore
    Serial.println("read config from preferences:");
    
+
+   // preferences->begin("my-app", false);
+   // unsigned int counter = preferences->getUInt("counter", 0);
+   // Serial.printf("counter%u\n", counter);
+
+
+
+   Dmxwire.preferencesInit();
    Dmxwire.readConfig();
-   // dmxwire_settings_t _cfg;
-   // config = _cfg;
-   Dmxwire.writeConfig();
+
    config.ledRxpin = LEDRX_PIN;  //overwrite pins
    config.ledTxpin = LEDTX_PIN;
-   Serial.printf("ioMode:%u\n",config.ioMode);
-   Serial.printf("ledRxpin:%i\n",config.ledRxpin);
-   Serial.printf("ledTxpin:%i\n",config.ledTxpin);
-   Serial.printf("tx framerate:%u\n",config.txFramerate_ms);
-   Serial.printf("nrf_RXTXchannel:%u\n",config.nrf_RXTXchannel);
-   Serial.printf("ledRxMode:%u\n",config.ledRxMode);
-   Serial.printf("ledTxMode:%u\n",config.ledTxMode);
-   Serial.printf("nrf_RXTXchannel:%u\n",config.nrf_RXTXchannel);
-   Serial.printf("timeout_wire_ms:%lu\n",config.timeout_wire_ms);
-   Serial.printf("timeout_dmx512_ms:%lu\n",config.timeout_dmx512_ms);
-   Serial.printf("timeout_nrf24_ms:%lu\n",config.timeout_nrf24_ms);
-   Serial.println("=======================");
+
 
 
    radio = new RF24(NRF24_CE_PIN, NRF24_CSN_PIN);
@@ -353,52 +345,68 @@ void DMXWire::dmxboardRun(){
    switch(config.ioMode){
       case DMXBOARD_MODE_OFF:
       break;
-      case DMXBOARD_MODE_RX_NRF24:
-         Dmxwire.nrf24RX();
-         // Serial.println(Dmxwire.read(1));
-         delay(10);
-      break;
       case DMXBOARD_MODE_TX_DMX512:
-         if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, HIGH);
-         for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
-            DMX::Write(i, Dmxwire.read(i));
-         }
-         if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
-         // Serial.println(DMX::Read(1));
-         delay(16);
-         
+         // if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, HIGH);
+         // for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
+         //    DMX::Write(i, Dmxwire.read(i));
+         // }
+         // if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
+         // // Serial.println(DMX::Read(1));
+         // delay(16);
+
+         Serial.println("DMXBOARD_MODE_TX_DMX512");
+         delay(500);
       break;
       case DMXBOARD_MODE_TX_NRF24:
-         if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, HIGH);
-            Dmxwire.nrf24TX();  //Wire-packets to NRF24
-            // Serial.println(DMX::Read(1));
+         // if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, HIGH);
+         //    Dmxwire.nrf24TX();  //Wire-packets to NRF24
+         //    // Serial.println(DMX::Read(1));
          
-         if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, LOW);
-         delay(10);
-   
+         // if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, LOW);
+         // delay(10);
+         Serial.println("DMXBOARD_MODE_TX_NRF24");
+         delay(500);
+      break;
+      case DMXBOARD_MODE_RX_DMX512:
+         // Dmxwire.nrf24RX();
+         // Serial.println(Dmxwire.read(1));
+
+         Serial.println("DMXBOARD_MODE_RX_DMX512");
+         delay(500);
+      break;
+
+      case DMXBOARD_MODE_RX_NRF24:
+         // Dmxwire.nrf24RX();
+         // Serial.println(Dmxwire.read(1));
+
+         Serial.println("DMXBOARD_MODE_RX_NRF24");
+         delay(500);
+      break;
       case DMXBOARD_MODE_DMX512TONRF24:
 
 
-         for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
-            Dmxwire.write(i, DMX::Read(i));  //read from Serial to Buffer
-         }
-         Dmxwire.nrf24TX();
-         
+         // for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
+         //    Dmxwire.write(i, DMX::Read(i));  //read from Serial to Buffer
+         // }
+         // Dmxwire.nrf24TX();
+         Serial.println("DMXBOARD_MODE_DMX512TONRF24");
+         delay(500);
       break;
       case DMXBOARD_MODE_NRF24TODMX512:
-         if(config.ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, HIGH);
-         if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, HIGH);
+         // if(config.ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, HIGH);
+         // if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, HIGH);
 
-            Dmxwire.nrf24RX();
-            for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
-               DMX::Write(i, Dmxwire.read(i));
-            }
-            // Serial.println(Dmxwire.read(1));
-            if(config.ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
-            if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, LOW);
-            delay(10);
+      //    Dmxwire.nrf24RX();
+      //    for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
+      //       DMX::Write(i, Dmxwire.read(i));
+      //    }
+      //    // Serial.println(Dmxwire.read(1));
+      //    if(config.ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
+      //    if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, LOW);
+      //    delay(10);
       
-
+         Serial.println("DMXBOARD_MODE_NRF24TODMX512");
+         delay(500);
       break;
 
       default:
@@ -579,34 +587,65 @@ void DMXWire::serialhandler(){   //
 
 
 void DMXWire::preferencesInit(){
+   preferences = new Preferences();
+   preferences->begin("dmxwire_config", false);
+   Serial.println("preferences initialized");
 
 }
 
 void DMXWire::readConfig(){
 
-   // xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+   xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+
+   config.ioMode = preferences->getUChar("ioMode", DMXBOARD_MODE_TX_DMX512);
+   config.ledRxMode = preferences->getUChar("ledRxMode", DMXWIRE_LED_WIRE);
+   config.ledRxpin = preferences->getInt("ledRxPin", LED_BUILTIN);
+   config.ledTxMode = preferences->getUChar("ledTxMode",DMXWIRE_LED_DMX512);
+   config.ledTxpin = preferences->getInt("ledTxPin", -1);
+   config.nrf_RXTXaddress = preferences->getULong64("nrf_RXTXaddress",0xF0F0F0F0F0LL );
+   config.nrf_RXTXaddress = preferences->getUChar("nrf_RXTXchannel", 0);
+   config.timeout_dmx512_ms = preferences->getULong("timeout_dmx512_ms", 500);
+   config.timeout_nrf24_ms = preferences->getULong("timeout_nrf24_ms", 500);
+   config.timeout_wire_ms = preferences->getULong("timeout_wire_ms", 500);
 
 
+   // Serial.printf("ioMode:%u\n",config.ioMode);
+   // Serial.printf("ledRxpin:%i\n",config.ledRxpin);
+   // Serial.printf("ledTxpin:%i\n",config.ledTxpin);
+   // Serial.printf("tx framerate:%u\n",config.txFramerate_ms);
+   // Serial.printf("ledRxMode:%u\n",config.ledRxMode);
+   // Serial.printf("ledTxMode:%u\n",config.ledTxMode);
+   // Serial.printf("nrf_RXTXaddress:%u\n",config.nrf_RXTXaddress);
+   // Serial.printf("nrf_RXTXchannel:%u\n",config.nrf_RXTXchannel);
+   // Serial.printf("timeout_wire_ms:%lu\n",config.timeout_wire_ms);
+   // Serial.printf("timeout_dmx512_ms:%lu\n",config.timeout_dmx512_ms);
+   // Serial.printf("timeout_nrf24_ms:%lu\n",config.timeout_nrf24_ms);
+   // Serial.println("=======================");
 
 
-
-   Serial.printf("get ioMode:%u\n", config.ioMode);
-
-
-   // xSemaphoreGive(sync_config);
-   delay(2);
+   xSemaphoreGive(sync_config);
    
 }
 
 void DMXWire::writeConfig(){
    Serial.println("write...");
    
-   // xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
-
+   xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
    Serial.printf("set ioMode:%u size of config: %u\n", config.ioMode, sizeof(config));
 
-   // xSemaphoreGive(sync_config);
+   preferences->putUChar("ioMode", config.ioMode);
+   preferences->putUChar("ledRxMode", config.ledRxMode);
+   preferences->getInt("ledRxPin", config.ledRxpin);
+   preferences->putUChar("ledTxMode", config.ledTxMode);
+   preferences->getInt("ledTxPin", config.ledTxpin);
+   preferences->getULong64("nrf_RXTXaddress", config.nrf_RXTXaddress );
+   preferences->getUChar("nrf_RXTXchannel", config.nrf_RXTXaddress);
+   preferences->getULong("timeout_dmx512_ms", config.timeout_dmx512_ms);
+   preferences->getULong("timeout_nrf24_ms", config.timeout_nrf24_ms);
+   preferences->getULong("timeout_wire_ms", config.timeout_wire_ms);
 
-   readConfig();
+   xSemaphoreGive(sync_config);
+
+   Dmxwire.readConfig();
    
 }

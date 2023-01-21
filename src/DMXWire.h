@@ -12,7 +12,7 @@
 #include <Wire.h>
 #include <esp_timer.h>
 #include <Ticker.h>
-#include <preferences.h>
+#include <Preferences.h>
 
 //dmxboard stuff
 #include <dmx.h>
@@ -139,6 +139,7 @@ private:
 
    // config stuff 
 	static dmxwire_settings_t config;
+   static Preferences *preferences;
    static void preferencesInit();
    static void readConfig();
    static void writeConfig();
