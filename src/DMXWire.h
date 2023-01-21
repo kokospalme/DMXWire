@@ -124,11 +124,11 @@ private:
    /* dedicated devices */
    static RF24 *radio;
    static nrf24Data_t nrf24;  //data for nrf24
-   static void nrf24InitTX(); //initialize nrf24 module (TX mode)
-   static void nrf24InitRX(); //initialize nrf24 module (RX mode)
-   static void nrf24TX(void*pvParameters);   //transmit over nrf24 module
+   // static void dmx512rx_task(void*pvParameters);
+   // static void dmx512tx_task(void*pvParameters);
+   static void nrf24tx_task(void*pvParameters);   //transmit over nrf24 module
    static void nrf24rx_task(void*pvParameters);
-   static void nrf24RX_toDmx512(void*pvParameters);
+   static void nrf24rx_toDmx512(void*pvParameters);
    
 
 	static int packetBusy;	//is packet busy? 
