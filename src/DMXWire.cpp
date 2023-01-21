@@ -77,7 +77,7 @@ void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint3
 
 void DMXWire::beginSlaveRX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
    Serial.println("begin Slave RX");
-   // sync_dmx = xSemaphoreCreateMutex(); //create semaphore
+   sync_dmx = xSemaphoreCreateMutex(); //create semaphore
 	Wire.begin(slaveaddress, sda, scl,clock);
 	Wire.onReceive(DMXWire::slaveRXcallback); // register event
 	DMXWire::slaveAddress = slaveaddress;
@@ -89,9 +89,12 @@ uint8_t DMXWire::read(uint16_t channel){
 	uint16_t _packetNo = (channel-1) / DMXWIRE_CHANNEL_PER_PACKET;
 	uint16_t _byteNo = (channel - 1) - _packetNo * DMXWIRE_CHANNEL_PER_PACKET;
 
-   // xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
-	return packets[_packetNo][DMXWIRE_HEAD + _byteNo];
-   // xSemaphoreGive(sync_dmx);
+   xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
+   uint8_t _value = packets[_packetNo][DMXWIRE_HEAD + _byteNo];
+   xSemaphoreGive(sync_dmx);
+   
+	return _value;
+   
 }
 
 unsigned long DMXWire::getDuration(){
@@ -177,16 +180,15 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
 	uint8_t buffer[bufSize];
 	
 	for(int i=0; i < bufSize; i++){
-      // xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
+      xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
 		buffer[i] = Wire.read();
       
 
 		if(buffer[0] == 0){
 			timestamp_wire = millis();
-			if(config.ledRxMode == DMXWIRE_LED_WIRE) digitalWrite(config.ledRxpin, HIGH);
-         // digitalWrite(config.ledTxpin, HIGH);
 		}
-      // xSemaphoreGive(sync_dmx);
+      if(config.ledRxMode == DMXWIRE_LED_WIRE) digitalWrite(config.ledRxpin, HIGH);
+      xSemaphoreGive(sync_dmx);
 		// Serial.print(buffer[i], HEX);
 	}
 	// Serial.println("");
