@@ -304,7 +304,7 @@ void DMXWire::dmxboardInit(){
          case DMXBOARD_MODE_RX_NRF24:	//mode rx dmx512 [Wire slave, DMX RX]
             beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
             xTaskCreatePinnedToCore(DMXWire::nrf24rx_task, "nrf24rx_task", 1024, NULL, 1, NULL, NRF24_CORE);
-            setLedTx(DMXWIRE_LED_WIRE);   //ToDo: implement
+            setLedTx(DMXWIRE_LED_WIRE);
             setLedRx(DMXWIRE_LED_NRF24);
             Serial.println("DMX board RX NRF24 Mode");
          break;
@@ -409,7 +409,6 @@ void DMXWire::nrf24tx_task(void*pvParameters) { //transmit via NRF24
       for (uint8_t group = 0; group < NRF24_MAXGROUPS; group++) { // send groups of DMX data, 16 bytes at a time
          uint16_t group_ptr = group * NRF24_BYTES_PER_PACKET; // create group pointer for array
          if (millis() > timestamp_nrf24 + config.timeout_nrf24_ms) { // allow ALL radio data (full DMX array) to be send once per second, regardless of changes
-            timestamp_nrf24 = millis(); // reset timestamp
             nrf24.group_send = true; // force ALL send
          }else { 
             nrf24.group_send = false; // preset flag to false, only set it if there has been a data change since last time
@@ -427,6 +426,7 @@ void DMXWire::nrf24tx_task(void*pvParameters) { //transmit via NRF24
 
          if (nrf24.group_send) { // only send the data that has changed, any data change in a group will result in whole group send
          if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, HIGH);
+            timestamp_nrf24 = millis(); // reset timestamp
             nrf24.payload[0] = group; // set first byte to point to group number (groups of 16 bytes)
             nrf24.payload[1] = nrf24.timeStamp++; // second byte helps us monitor consistency of reception at receiver with a continuous frame counter
             // Serial.println("radio OK. send payload...");
@@ -490,7 +490,7 @@ void DMXWire::nrf24rx_task(void*pvParameters){
       if(_iomode != DMXBOARD_MODE_RX_NRF24){ //if ioMode is not longer RX NRF24, delete task
          if(config.ledRxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledRxpin, LOW);
          Serial.println("delete NRF24 RX Task");
-         delay(100);
+         digitalWrite(config.ledRxpin, LOW);
          vTaskDelete(NULL);
       }
       if(millis() > timestamp_nrf24 + _timestamp){ //LED handling
@@ -526,7 +526,10 @@ void DMXWire::nrf24rx_toDmx512(void*pvParameters){
       if(nrf24.radioOK == false) return;  //return if nrf24 is not initialized
 
       if ( radio->available() ) {
+         timestamp_nrf24 = millis();
+         timestamp_dmx512 = millis();
          if(config.ledRxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledRxpin, HIGH);
+         if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, HIGH);
 
          radio->read( nrf24.payload, sizeof(nrf24.payload) ); // get data packet from radio 
          for (uint8_t i = 0; i < NRF24_BYTES_PER_PACKET; i++) {
@@ -536,16 +539,22 @@ void DMXWire::nrf24rx_toDmx512(void*pvParameters){
             DMX::Write(NRF24_BYTES_PER_PACKET * nrf24.payload[0] + i ,nrf24.payload[i+2]);
          } 
          // Serial.println(NRF24_BYTES_PER_PACKET * nrf24.payload[0] ,nrf24.payload[2]);
-
-         if(config.ledRxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledRxpin, LOW);
          
       } 
 
       xSemaphoreTake(sync_config, portMAX_DELAY);
       uint8_t _iomode = config.ioMode;
+      unsigned long _timestamp = config.timeout_nrf24_ms;
       xSemaphoreGive(sync_config);
       if(_iomode != DMXBOARD_MODE_NRF24TODMX512){ //if ioMode is not longer NRF24 to dmx512, delete task
+         Serial.println("delete NRF24 to dmx512 Task");
+         digitalWrite(config.ledRxpin, LOW);
+         digitalWrite(config.ledTxpin, LOW);
          vTaskDelete(NULL);
+      }
+      if(millis() > timestamp_nrf24 + _timestamp){ //LED handling
+         if(config.ledRxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledRxpin, LOW);
+         if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
       }
    }
 }
