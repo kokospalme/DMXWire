@@ -49,8 +49,7 @@
 #define SETTINGID_NRF24_SET_CHANNEL 32
 #define SETTINGID_NRF24_GET_CHANNEL 33
 
-#define EEPROM_START_ADDRESS 1
-#define EEPROM_SIZE 100
+#define NRF24_CORE 0
 
 struct dmxwire_settings_t{
    uint8_t ioMode = DMXBOARD_MODE_TX_DMX512; //default iomode: TX over DMX512 (Serial)
@@ -127,8 +126,9 @@ private:
    static nrf24Data_t nrf24;  //data for nrf24
    static void nrf24InitTX(); //initialize nrf24 module (TX mode)
    static void nrf24InitRX(); //initialize nrf24 module (RX mode)
-   static void nrf24TX();   //transmit over nrf24 module
-   static void nrf24RX();
+   static void nrf24TX(void*pvParameters);   //transmit over nrf24 module
+   static void nrf24rx_task(void*pvParameters);
+   static void nrf24RX_toDmx512(void*pvParameters);
    
 
 	static int packetBusy;	//is packet busy? 
