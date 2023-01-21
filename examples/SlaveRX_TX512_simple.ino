@@ -14,8 +14,6 @@
 #define SCL_PIN 5
 #define SDA_PIN 4
 
-#define LED0_PIN 12	//Luatosboard: 12 & 13
-#define LED1_PIN 13
 
 uint8_t send_value = 0;
 
@@ -26,6 +24,7 @@ void setup(){
 	DMX::Initialize(output);
 	// Dmxwire.setLed0(LED0_PIN, DMXWIRE_LED_RX);
 	Dmxwire.beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+   Serial.println("setup finished");
 }
 
 void loop(){
@@ -38,8 +37,5 @@ void loop(){
 	Serial.printf("\t%u \t%u \t%u \t%u \t%u \n", Dmxwire.read(1), Dmxwire.read(2), Dmxwire.read(3), Dmxwire.read(4), Dmxwire.read(5));
 	delay(30);
 
-	Dmxwire.getTimeout();	//check if slave gets data 
+	Dmxwire.getTimeout_wire();	//check if slave gets data 
 }
-
-
-

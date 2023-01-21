@@ -59,6 +59,12 @@ void DMXWire::setLedTx(uint8_t mode){	//set mode for ledRx
 	digitalWrite(config.ledTxpin, LOW);
 }
 
+void DMXWire::setIomode(uint8_t mode){
+   if(mode != config.ioMode){
+      config.ioMode = mode;
+   }
+}
+
 void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
    sync_dmx = xSemaphoreCreateMutex(); //create semaphore
 	Wire.begin(sda, scl,clock);
@@ -196,10 +202,10 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
 				packets[packetNo][i] = buffer[i];
 			}
 
-			// if(packetNo== 0){
-			// 	Serial.print(Dmxwire.getDuration());
-			// 	Serial.printf("\t%u \t%u \t%u \t%u \t%u \n", packets[0][1], packets[0][2], packets[0][3], packets[0][4], packets[0][5]);
-			// }
+			if(packetNo== 0){
+				Serial.print(Dmxwire.getDuration());
+				Serial.printf("\t%u \t%u \t%u \t%u \t%u \n", packets[0][1], packets[0][2], packets[0][3], packets[0][4], packets[0][5]);
+			}
 
 			
 	}else{	//else: setting codes or unknown
@@ -251,61 +257,62 @@ void DMXWire::dmxboardInit(){
    config.ledTxpin = LEDTX_PIN;
    radio = new RF24(NRF24_CE_PIN, NRF24_CSN_PIN);
 
+
    	switch(config.ioMode){	//input/output mode
          case DMXBOARD_MODE_OFF:	//mode off [Wire slave, no output]
-         beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-         setLedTx(DMXWIRE_LED_OFF);
-         setLedRx(DMXWIRE_LED_WIRE);
-         Serial.println("DMX board OFF");
+            Dmxwire.beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+            Dmxwire.setLedTx(DMXWIRE_LED_OFF);
+            Dmxwire.setLedRx(DMXWIRE_LED_WIRE);
+            Serial.println("DMX board OFF");
          break;
 
          case DMXBOARD_MODE_TX_DMX512:	//mode tx dmx512 [Wire slave, DMX TX]
-         beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-         setLedTx(DMXWIRE_LED_DMX512);
-         setLedRx(DMXWIRE_LED_WIRE);
-         Serial.println("DMX board TX DMX512 Mode");
-         DMX::Initialize(output);
+            DMX::Initialize(output);
+            Dmxwire.beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+            Dmxwire.setLedTx(DMXWIRE_LED_DMX512);
+            Dmxwire.setLedRx(DMXWIRE_LED_WIRE);
+            Serial.println("DMX board TX DMX512 Mode");
          break;
 
          case DMXBOARD_MODE_TX_NRF24:	//mode tx nrf24 [Wire slave, NRF24 TX]
-         beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-         setLedTx(DMXWIRE_LED_NRF24);
-         setLedRx(DMXWIRE_LED_WIRE);
-         Serial.println("DMX board TX NRF24 Mode");
-         nrf24InitTX();   //init NRF24
+            beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+            setLedTx(DMXWIRE_LED_NRF24);
+            setLedRx(DMXWIRE_LED_WIRE);
+            Serial.println("DMX board TX NRF24 Mode");
+            nrf24InitTX();   //init NRF24
          break;
 
          case DMXBOARD_MODE_RX_DMX512:	//mode rx dmx512 [Wire slave, DMX RX]
-         // beginSlaveTX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-         setLedTx(DMXWIRE_LED_WIRE);
-         setLedRx(DMXWIRE_LED_DMX512);
-         Serial.println("DMX board RX DMX512 Mode");
-         DMX::Initialize(input);
+            // beginSlaveTX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+            setLedTx(DMXWIRE_LED_WIRE);
+            setLedRx(DMXWIRE_LED_DMX512);
+            Serial.println("DMX board RX DMX512 Mode");
+            DMX::Initialize(input);
          break;
 
          case DMXBOARD_MODE_RX_NRF24:	//mode rx dmx512 [Wire slave, DMX RX]
-         // beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-         setLedTx(DMXWIRE_LED_WIRE);   //ToDo: implement
-         setLedRx(DMXWIRE_LED_NRF24);
-         Serial.println("DMX board RX NRF24 Mode");
+            // beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+            setLedTx(DMXWIRE_LED_WIRE);   //ToDo: implement
+            setLedRx(DMXWIRE_LED_NRF24);
+            Serial.println("DMX board RX NRF24 Mode");
          break;
 
          case DMXBOARD_MODE_DMX512TONRF24:   //ToDo: implement
-         // beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-         setLedTx(DMXWIRE_LED_NRF24);
-         setLedRx(DMXWIRE_LED_DMX512);
-         Serial.println("DMX board DMX512 to NRF24 Mode");
+            // beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+            setLedTx(DMXWIRE_LED_NRF24);
+            setLedRx(DMXWIRE_LED_DMX512);
+            Serial.println("DMX board DMX512 to NRF24 Mode");
          break;
 
          case DMXBOARD_MODE_NRF24TODMX512:   //ToDo: implement
-         setLedTx(DMXWIRE_LED_DMX512);
-         setLedRx(DMXWIRE_LED_NRF24);
-         Serial.println("DMX board NRF24 to DMX512 Mode");
+            setLedTx(DMXWIRE_LED_DMX512);
+            setLedRx(DMXWIRE_LED_NRF24);
+            Serial.println("DMX board NRF24 to DMX512 Mode");
          break;
 
          default:	//default [Wire slave, no output]
-         setLedTx(DMXWIRE_LED_OFF);
-         setLedRx(DMXWIRE_LED_WIRE);
+            setLedTx(DMXWIRE_LED_OFF);
+            setLedRx(DMXWIRE_LED_WIRE);
          break;
 	}
 }
@@ -316,11 +323,15 @@ void DMXWire::dmxboardRun(){
       break;
       case DMXBOARD_MODE_TX_DMX512:
          for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
-            DMX::Write(i, read(i-5));
+            DMX::Write(i, Dmxwire.read(i));
          }
+         // Serial.println(DMX::Read(1));
+         delay(30);
+         
       break;
       case DMXBOARD_MODE_TX_NRF24:
          nrf24TX();  //Wire-packets to NRF24
+         delay(3);
       break;
       default:
       break;

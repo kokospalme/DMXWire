@@ -70,6 +70,7 @@ public:
 	static void setLedRx(uint8_t mode);	//set mode for led0
 	static void setLedTx(int pin, uint8_t mode);	//set pin and mode for led1
 	static void setLedTx(uint8_t mode);	//set mode for led1
+   static void setIomode(uint8_t mode);
 	static void beginMasterTX(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
 	static void beginSlaveRX(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
 
