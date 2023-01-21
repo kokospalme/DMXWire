@@ -3,6 +3,13 @@
  *
  *  Created on: 23 Dec 2022
  *      Author: Chris
+ * 
+ * 
+ *  measure power consumption:
+ *  
+ *  idle:      150mA
+ *  TX NRF24:  150mA
+ *  RX NRF24:  170mA
  */
 
 #ifndef DMXWIRE_H_
@@ -19,6 +26,8 @@
 #include <SPI.h>
 #include <nRF24L01.h> // library: https://github.com/maniacbug/RF24
 #include <RF24.h>
+
+#define DMXWIRE_DEBUG_DMXBOARD_RUN
 
 #define DMXWIRE_INTERVAL_MS	30	// 20 ... 40ms = 50 ... 25 FPS
 
