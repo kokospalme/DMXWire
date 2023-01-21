@@ -29,6 +29,10 @@ DMXWire::DMXWire() {
 	}
 }
 
+DMXWire::~DMXWire() {
+	// TODO Auto-generated destructor stub
+}
+
 void DMXWire::setClock(uint32_t frequency){
 	Wire.setClock(frequency);
 }
@@ -179,7 +183,8 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
 
 		if(buffer[0] == 0){
 			timestamp_wire = millis();
-			if(config.ledTxMode == DMXWIRE_LED_WIRE) digitalWrite(config.ledTxpin, HIGH);
+			if(config.ledRxMode == DMXWIRE_LED_WIRE) digitalWrite(config.ledRxpin, HIGH);
+         // digitalWrite(config.ledTxpin, HIGH);
 		}
       // xSemaphoreGive(sync_dmx);
 		// Serial.print(buffer[i], HEX);
@@ -246,9 +251,7 @@ void DMXWire::sendPacket(){	//master TX
 }
 
 
-DMXWire::~DMXWire() {
-	// TODO Auto-generated destructor stub
-}
+
 
 
 
