@@ -17,6 +17,7 @@ unsigned long DMXWire::timestamp_dmx512 = 0;
 unsigned long DMXWire::timestamp_nrf24 = 0;
 dmxwire_settings_t DMXWire::config;
 SemaphoreHandle_t DMXWire::sync_dmx;
+SemaphoreHandle_t DMXWire::sync_config;
 nrf24Data_t DMXWire::nrf24;
 RF24 *DMXWire::radio;
 
@@ -77,7 +78,9 @@ void DMXWire::beginMasterTX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint3
 
 void DMXWire::beginSlaveRX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
    Serial.println("begin Slave RX");
+
    sync_dmx = xSemaphoreCreateMutex(); //create semaphore
+
 	Wire.begin(slaveaddress, sda, scl,clock);
 	Wire.onReceive(DMXWire::slaveRXcallback); // register event
 	DMXWire::slaveAddress = slaveaddress;
@@ -92,7 +95,7 @@ uint8_t DMXWire::read(uint16_t channel){
    xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
    uint8_t _value = packets[_packetNo][DMXWIRE_HEAD + _byteNo];
    xSemaphoreGive(sync_dmx);
-   
+
 	return _value;
    
 }
@@ -249,7 +252,7 @@ void DMXWire::sendPacket(){	//master TX
 	Wire.write(_packet, DMXWIRE_BYTES_PER_PACKET);
 	Wire.endTransmission();    // stop transmitting
 	packetBusy = DMXWIRE_NOTBUSY;
-	if(packetNo == 0)Serial.printf("P%u: %u \t%u \t%u \t%u \t%u\n", packets[packetNo][0], packets[packetNo][1], packets[packetNo][2], packets[packetNo][3], packets[packetNo][4], packets[packetNo][5]);
+	// if(packetNo == 0)Serial.printf("P%u: %u \t%u \t%u \t%u \t%u\n", packets[packetNo][0], packets[packetNo][1], packets[packetNo][2], packets[packetNo][3], packets[packetNo][4], packets[packetNo][5]);
 }
 
 
@@ -258,11 +261,32 @@ void DMXWire::sendPacket(){	//master TX
 
 
 void DMXWire::dmxboardInit(){
-   config.ledRxpin = LEDRX_PIN;
+   sync_config = xSemaphoreCreateMutex(); //create semaphore
+   Serial.println("read config from preferences:");
+   
+   Dmxwire.readConfig();
+   // dmxwire_settings_t _cfg;
+   // config = _cfg;
+   Dmxwire.writeConfig();
+   config.ledRxpin = LEDRX_PIN;  //overwrite pins
    config.ledTxpin = LEDTX_PIN;
+   Serial.printf("ioMode:%u\n",config.ioMode);
+   Serial.printf("ledRxpin:%i\n",config.ledRxpin);
+   Serial.printf("ledTxpin:%i\n",config.ledTxpin);
+   Serial.printf("tx framerate:%u\n",config.txFramerate_ms);
+   Serial.printf("nrf_RXTXchannel:%u\n",config.nrf_RXTXchannel);
+   Serial.printf("ledRxMode:%u\n",config.ledRxMode);
+   Serial.printf("ledTxMode:%u\n",config.ledTxMode);
+   Serial.printf("nrf_RXTXchannel:%u\n",config.nrf_RXTXchannel);
+   Serial.printf("timeout_wire_ms:%lu\n",config.timeout_wire_ms);
+   Serial.printf("timeout_dmx512_ms:%lu\n",config.timeout_dmx512_ms);
+   Serial.printf("timeout_nrf24_ms:%lu\n",config.timeout_nrf24_ms);
+   Serial.println("=======================");
+
+
    radio = new RF24(NRF24_CE_PIN, NRF24_CSN_PIN);
 
-
+   
    	switch(config.ioMode){	//input/output mode
          case DMXBOARD_MODE_OFF:	//mode off [Wire slave, no output]
             Dmxwire.beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
@@ -280,7 +304,7 @@ void DMXWire::dmxboardInit(){
          break;
 
          case DMXBOARD_MODE_TX_NRF24:	//mode tx nrf24 [Wire slave, NRF24 TX]
-            beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+            beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
             setLedTx(DMXWIRE_LED_NRF24);
             setLedRx(DMXWIRE_LED_WIRE);
             Serial.println("DMX board TX NRF24 Mode");
@@ -288,7 +312,7 @@ void DMXWire::dmxboardInit(){
          break;
 
          case DMXBOARD_MODE_RX_DMX512:	//mode rx dmx512 [Wire slave, DMX RX]
-            // beginSlaveTX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+            // beginSlaveTX(SCL_PIN, SDA_PIN, config.slaveAddress, I2C_CLOCK);
             setLedTx(DMXWIRE_LED_WIRE);
             setLedRx(DMXWIRE_LED_DMX512);
             Serial.println("DMX board RX DMX512 Mode");
@@ -296,22 +320,25 @@ void DMXWire::dmxboardInit(){
          break;
 
          case DMXBOARD_MODE_RX_NRF24:	//mode rx dmx512 [Wire slave, DMX RX]
-            // beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+            // beginSlaveRX(SCL_PIN, SDA_PIN, config.slaveAddress, I2C_CLOCK);
             setLedTx(DMXWIRE_LED_WIRE);   //ToDo: implement
             setLedRx(DMXWIRE_LED_NRF24);
             Serial.println("DMX board RX NRF24 Mode");
          break;
 
          case DMXBOARD_MODE_DMX512TONRF24:   //ToDo: implement
-            // beginSlaveRX(SDA_PIN, SCL_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+            beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
             setLedTx(DMXWIRE_LED_NRF24);
             setLedRx(DMXWIRE_LED_DMX512);
+            DMX::Initialize(input);
             Serial.println("DMX board DMX512 to NRF24 Mode");
          break;
 
-         case DMXBOARD_MODE_NRF24TODMX512:   //ToDo: implement
+         case DMXBOARD_MODE_NRF24TODMX512:
+            beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
             setLedTx(DMXWIRE_LED_DMX512);
             setLedRx(DMXWIRE_LED_NRF24);
+            DMX::Initialize(output);
             Serial.println("DMX board NRF24 to DMX512 Mode");
          break;
 
@@ -326,55 +353,96 @@ void DMXWire::dmxboardRun(){
    switch(config.ioMode){
       case DMXBOARD_MODE_OFF:
       break;
+      case DMXBOARD_MODE_RX_NRF24:
+         Dmxwire.nrf24RX();
+         // Serial.println(Dmxwire.read(1));
+         delay(10);
+      break;
       case DMXBOARD_MODE_TX_DMX512:
+         if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, HIGH);
          for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
             DMX::Write(i, Dmxwire.read(i));
          }
+         if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
          // Serial.println(DMX::Read(1));
-         delay(30);
+         delay(16);
          
       break;
       case DMXBOARD_MODE_TX_NRF24:
-         nrf24TX();  //Wire-packets to NRF24
-         delay(3);
+         if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, HIGH);
+            Dmxwire.nrf24TX();  //Wire-packets to NRF24
+            // Serial.println(DMX::Read(1));
+         
+         if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, LOW);
+         delay(10);
+   
+      case DMXBOARD_MODE_DMX512TONRF24:
+
+
+         for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
+            Dmxwire.write(i, DMX::Read(i));  //read from Serial to Buffer
+         }
+         Dmxwire.nrf24TX();
+         
       break;
+      case DMXBOARD_MODE_NRF24TODMX512:
+         if(config.ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, HIGH);
+         if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, HIGH);
+
+            Dmxwire.nrf24RX();
+            for(int i = 1; i <= 512; i++){   //write all 521 bytes from Wire to DMX Serial output
+               DMX::Write(i, Dmxwire.read(i));
+            }
+            // Serial.println(Dmxwire.read(1));
+            if(config.ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
+            if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, LOW);
+            delay(10);
+      
+
+      break;
+
       default:
       break;
    }
    getTimeout_wire();
    getTimeout_dmx512();
    getTimeout_wire();
+   Dmxwire.serialhandler();
 }
 
 
-
-
 void DMXWire::nrf24InitTX(){
-   radio->begin();
+   if(!radio->begin()) Serial.println("NRF24 is NOT responding");
+   else Serial.println("NRF24 OK.");
+   
    radio->setAutoAck(false);
    radio->setPayloadSize(NRF24_MAXPAYLOAD);
    radio->setPALevel(RF24_PA_HIGH);    
    radio->setDataRate(RF24_250KBPS); 
    radio->setRetries(0,0);
-   radio->setChannel(nrf24.RXTXchannel); // set the channel
-   radio->openWritingPipe(nrf24.RXTXaddress); // set network address
+   radio->setChannel(config.nrf_RXTXchannel); // set the channel
+   radio->openWritingPipe(config.nrf_RXTXaddress); // set network address
    radio->stopListening(); // start talking !
 }
 
 void DMXWire::nrf24InitRX(){
-   radio->begin();
+   if(!radio->begin()) Serial.println("NRF24 is NOT responding");
+   else Serial.println("NRF24 OK.");
+
    radio->setAutoAck(false);
    radio->setPayloadSize(NRF24_MAXPAYLOAD);
    radio->setPALevel(RF24_PA_HIGH);    
    radio->setDataRate(RF24_250KBPS); 
    radio->setRetries(0,0);
-   radio->setChannel(nrf24.RXTXchannel); // set the channel
-   radio->openReadingPipe(1,nrf24.RXTXaddress); // set network address
+   radio->setChannel(config.nrf_RXTXchannel); // set the channel
+   radio->openReadingPipe(1,config.nrf_RXTXaddress); // set network address
    radio->startListening(); // start listening for data
 }
 
 void DMXWire::nrf24TX() { //transmit via NRF24
 
+   if(config.ledRxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, HIGH);
+   if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, HIGH);
    for (uint8_t group = 0; group < NRF24_MAXGROUPS; group++) { // send groups of DMX data, 16 bytes at a time
       uint16_t group_ptr = group * NRF24_BYTES_PER_PACKET; // create group pointer for array
       if (millis() > timestamp_nrf24+ config.timeout_nrf24_ms) { // allow ALL radio data (full DMX array) to be send once per second, regardless of changes
@@ -400,6 +468,11 @@ void DMXWire::nrf24TX() { //transmit via NRF24
          radio->write( nrf24.payload, sizeof(nrf24.payload) ); // dump payload to radio
       } 
    } 
+   if(config.ledRxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, LOW);
+   if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
+   delay(10);
+
+
 } 
 
 void DMXWire::nrf24RX(){
@@ -411,11 +484,129 @@ void DMXWire::nrf24RX(){
          for (uint8_t i = 0; i < NRF24_BYTES_PER_PACKET; i++) {
             uint16_t _channel = NRF24_BYTES_PER_PACKET * nrf24.payload[0] + i ;
             // uint8_t _value = nrf24.payload[i+2];
-            write(NRF24_BYTES_PER_PACKET * nrf24.payload[0] + i ,nrf24.payload[i+2]); // parse radio data into dmx data array
+            Dmxwire.write(NRF24_BYTES_PER_PACKET * nrf24.payload[0] + i ,nrf24.payload[i+2]); // parse radio data into dmx data array
             
          } 
       }
       if(config.ledRxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledRxpin, LOW);
       
    } 
+}
+
+
+
+void DMXWire::serialhandler(){   //
+   if(Serial.available()){
+      String _cmd = Serial.readStringUntil('\n');  //read line
+      // Serial.println(_cmd);
+      if(_cmd.indexOf(".") < 0){
+         Serial.println("wrong cmd");
+         return;
+      }
+      
+      String _cmd0 = _cmd.substring(0, _cmd.indexOf("."));
+      String _cmd1 = _cmd.substring(_cmd.indexOf(".")+1, _cmd.length());
+
+      xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+      dmxwire_settings_t _cfg = config;
+      xSemaphoreGive(sync_config);
+      // return;
+
+      // Serial.printf("CMD0:%s, CMD1:%s\n",_cmd0.c_str(), _cmd1.c_str());
+      int cmd0 = _cmd0.toInt();
+      int cmd1 = _cmd1.toInt();
+      if(cmd0 == 0){
+         if(cmd1 == 0){ //write to EEPROM
+            Serial.println("write things to eeprom...");
+            Dmxwire.writeConfig();
+         }else if(cmd1 == -1){   //restart
+            Serial.println("restart device");
+            ESP.restart();
+         }else if(cmd1 == -2){   //hardreset device
+            Serial.println("hardreset Device...");
+            dmxwire_settings_t _newConfig;
+            xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+            config = _newConfig;
+            xSemaphoreGive(sync_config);
+            Dmxwire.writeConfig();
+            Serial.println("restart device");
+            ESP.restart();
+         }
+      }else if(cmd0 == 1){ //io Mode
+         if(cmd1 == -1){   //ioMode idle
+            _cfg.ioMode = DMXBOARD_MODE_OFF;
+            Serial.printf("ioMode: idle(%u)\n", _cfg.ioMode);
+         }else if(cmd1 == 0){ //ioMode RX dmx512
+            _cfg.ioMode = DMXBOARD_MODE_RX_DMX512;
+            Serial.printf("ioMode: RX dmx512(%u)\n", _cfg.ioMode);
+         }else if(cmd1 == 1){ //ioMode RX NRF24
+            _cfg.ioMode = DMXBOARD_MODE_RX_NRF24;
+            Serial.printf("ioMode: rx nrf24(%u)\n", _cfg.ioMode);
+         }else if(cmd1 == 2){ //ioMode TX dmx512
+            _cfg.ioMode = DMXBOARD_MODE_TX_DMX512;
+            Serial.printf("ioMode: tx dmx512(%u)\n", _cfg.ioMode);
+         }else if(cmd1 == 3){ //ioMode TX NRF24
+            _cfg.ioMode = DMXBOARD_MODE_TX_NRF24;
+            Serial.printf("ioMode: tx nrf24(%u)\n", _cfg.ioMode);
+         }else if(cmd1 == 4){ //ioMode DMX to NRF24
+            _cfg.ioMode = DMXBOARD_MODE_DMX512TONRF24;
+            Serial.printf("ioMode: dmx512 to nrf24(%u)\n", _cfg.ioMode);
+         }else if(cmd1 == 5){ //ioMode DMX to NRF24
+            _cfg.ioMode = DMXBOARD_MODE_NRF24TODMX512;
+            Serial.printf("ioMode: nrf24 to dmx512(%u)\n", _cfg.ioMode);
+         }
+      }else if(cmd0 == 4){   //NRF24 get
+         if(cmd1 >= 0 && cmd1 <= 255){ //get Noise on channel x
+            Serial.printf("noise: %i\n", random(0,255));
+         }else if(cmd1 == -1){
+            Serial.printf("rx/tx channel:%i", _cfg.nrf_RXTXchannel);
+         }
+      }else if(cmd0 == 5){ //NRF24 set
+         if(cmd1 >= 0 && cmd1 <= 255){ //get Noise on channel x
+            _cfg.nrf_RXTXchannel = cmd1;
+            Serial.printf("rx/tx channel:%i", _cfg.nrf_RXTXchannel);
+         }else if(cmd1 == -1){
+            Serial.println("rx/tx channel on Automode");
+         }
+      }
+
+      xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+      config = _cfg;
+      xSemaphoreGive(sync_config);
+      delay(2);
+   }
+}
+
+
+void DMXWire::preferencesInit(){
+
+}
+
+void DMXWire::readConfig(){
+
+   // xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+
+
+
+
+
+   Serial.printf("get ioMode:%u\n", config.ioMode);
+
+
+   // xSemaphoreGive(sync_config);
+   delay(2);
+   
+}
+
+void DMXWire::writeConfig(){
+   Serial.println("write...");
+   
+   // xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+
+   Serial.printf("set ioMode:%u size of config: %u\n", config.ioMode, sizeof(config));
+
+   // xSemaphoreGive(sync_config);
+
+   readConfig();
+   
 }

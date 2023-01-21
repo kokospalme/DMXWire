@@ -15,8 +15,7 @@ void setup(){
    delay(2000);
    Serial.println("DMXWire slave RX (dmxboard) Booting...");
    SPI.begin(SPI_CLK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN, NRF24_CSN_PIN);   
-
-
+   
    Dmxwire.dmxboardInit(); //init dmxboard
 
 }

@@ -8,7 +8,6 @@
 #define LEDRX_PIN 8	//LEDs red
 #define LEDTX_PIN 0	//green 
 
-
 #define DMXBOARD_TX_FOLLOW 0	//follow = send frame when Master is sending one
 #define DMXBOARD_TX_MIN_MS 20	//20ms = 50 FPS
 #define DMXBOARD_TX_DEFAULT_MS 30	//30ms = 33,3 FPS
@@ -45,8 +44,6 @@
 struct nrf24Data_t{
    unsigned long refreshTimer = 0;
    unsigned long flashTimer = 0;
-   uint64_t RXTXaddress = 0xF0F0F0F0F0LL;
-   uint8_t RXTXchannel = 0;   //rx/tx channel (0 ... 255)
    uint8_t payload[NRF24_MAXPAYLOAD];
    uint8_t shadow_DMX[NRF24_MAX_DMX_CHANNELS];  //buffer dmx
    uint8_t timeStamp; 

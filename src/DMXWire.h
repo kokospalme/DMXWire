@@ -12,6 +12,7 @@
 #include <Wire.h>
 #include <esp_timer.h>
 #include <Ticker.h>
+#include <preferences.h>
 
 //dmxboard stuff
 #include <dmx.h>
@@ -48,6 +49,8 @@
 #define SETTINGID_NRF24_SET_CHANNEL 32
 #define SETTINGID_NRF24_GET_CHANNEL 33
 
+#define EEPROM_START_ADDRESS 1
+#define EEPROM_SIZE 100
 
 struct dmxwire_settings_t{
    uint8_t ioMode = DMXBOARD_MODE_TX_DMX512; //default iomode: TX over DMX512 (Serial)
@@ -56,6 +59,8 @@ struct dmxwire_settings_t{
 	uint8_t txFramerate_ms = DMXBOARD_TX_FOLLOW; //transmit only when master is sending something
 	uint8_t ledRxMode = DMXWIRE_LED_WIRE;	//indicate RX (default: Wire)
 	uint8_t ledTxMode = DMXWIRE_LED_DMX512;  //indicate TX (default: DMX512)
+   uint64_t nrf_RXTXaddress = 0xF0F0F0F0F0LL;
+   uint8_t nrf_RXTXchannel = 0;   //rx/tx channel (0 ... 255)
 	unsigned long timeout_wire_ms = 500;	//timeouts
 	unsigned long timeout_dmx512_ms = 500;
 	unsigned long timeout_nrf24_ms = 500;
@@ -89,6 +94,7 @@ public:
    static void dmxboardRun();
 
    /** read/write settings **/
+   static void serialhandler();
    static int writeSetting(uint8_t iD, int value); //writes a setting to slave
    static int writeSetting_saveTOEEPROM();
    static void writeSetting_restartSlave();
@@ -106,6 +112,7 @@ public:
 	static Ticker IRtimer;	// siehe: https://github.com/espressif/arduino-esp32/issues/3465
 	static void masterTXcallback();
 	static void slaveRXcallback(int bufSize);
+
 private:
 	static uint8_t packets[DMXWIRE_PACKETS][DMXWIRE_BYTES_PER_PACKET];
 	static uint8_t packetNo;
@@ -130,10 +137,15 @@ private:
    static unsigned long timestamp_dmx512;
    static unsigned long timestamp_nrf24;
 
+   // config stuff 
 	static dmxwire_settings_t config;
+   static void preferencesInit();
+   static void readConfig();
+   static void writeConfig();
 
    //task safety
    static SemaphoreHandle_t sync_dmx;
+   static SemaphoreHandle_t sync_config;
 
 }; extern DMXWire Dmxwire;
 
