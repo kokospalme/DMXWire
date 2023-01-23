@@ -10,13 +10,14 @@ void DMXWire::beginMaster(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_
 
 void DMXWire::startMaster_rx(){  //get whole universe
    request.getWholeUniverse = true;
+   // xTaskCreatePinnedToCore(DMXWire::masterRx_task, "master_rx_task", 1024, NULL, 1, NULL, NRF24_CORE);
 }
 
 void DMXWire::startMaster_rx(uint16_t startChannel, uint16_t noChannels){  //only get some channels
    request.getWholeUniverse = false;
    request.requestChannel = startChannel;
    request.requestNoChannels = noChannels;
-   xTaskCreatePinnedToCore(DMXWire::masterRx_task, "master_rx_task", 1024, NULL, 1, NULL, NRF24_CORE);
+   // xTaskCreatePinnedToCore(DMXWire::masterRx_task, "master_rx_task", 1024, NULL, 1, NULL, NRF24_CORE);
 }
 
 void DMXWire::stopMaster_rx(){
