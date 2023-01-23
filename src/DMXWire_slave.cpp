@@ -114,9 +114,9 @@ void DMXWire::settingshandler(uint16_t cmd0, uint16_t cmd1){
       _cfg.ioMode = DMXBOARD_MODE_TX_NRF24;
       Serial.printf("set ioMode: tx nrf24(%u)\n", _cfg.ioMode);
       sendAck((uint16_t)_cfg.ioMode);
-   }else if(cmd0 == SETTINGID_SET_IOMODE_TX_NRF24){ //ioMode RX dmx512
+   }else if(cmd0 == SETTINGID_SET_IOMODE_RX_DMX512){ //ioMode RX dmx512
       _cfg.ioMode = DMXBOARD_MODE_RX_DMX512;
-      Serial.printf("set ioMode: tx dmx512(%u)\n", _cfg.ioMode);
+      Serial.printf("set ioMode: rx dmx512(%u)\n", _cfg.ioMode);
       sendAck((uint16_t)_cfg.ioMode);
    }else if(cmd0 == SETTINGID_SET_IOMODE_RX_NRF24){ //ioMode RX NRF24
       _cfg.ioMode = DMXBOARD_MODE_RX_NRF24;
@@ -232,8 +232,9 @@ void DMXWire::dmxboardInit(){
             beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
             setLedTx(DMXWIRE_LED_WIRE);
             setLedRx(DMXWIRE_LED_DMX512);
-            Serial.println("DMX board RX DMX512 Mode");
+            Serial.println("init MODE_RX_DMX512");
             DMX::Initialize(input);
+            xTaskCreatePinnedToCore(DMXWire::slave_dmx512rx_task, "nrf24_tx_task", 1024, NULL, 1, NULL, DMX512_CORE);
          break;
 
          case DMXBOARD_MODE_RX_NRF24:	//mode rx dmx512 [Wire slave, DMX RX]
@@ -241,7 +242,7 @@ void DMXWire::dmxboardInit(){
             xTaskCreatePinnedToCore(DMXWire::nrf24rx_task, "nrf24rx_task", 1024, NULL, 1, NULL, NRF24_CORE);
             setLedTx(DMXWIRE_LED_WIRE);
             setLedRx(DMXWIRE_LED_NRF24);
-            Serial.println("DMX board RX NRF24 Mode");
+            Serial.println("init MODE_RX_NRF24");
          break;
 
          case DMXBOARD_MODE_DMX512TONRF24:   //ToDo: implement
@@ -269,6 +270,7 @@ void DMXWire::dmxboardInit(){
 }
 
 void DMXWire::dmxboardRun(){
+   bool _healthy = false;
    switch(config.ioMode){
       case DMXBOARD_MODE_OFF:
       break;
@@ -288,9 +290,19 @@ void DMXWire::dmxboardRun(){
          delay(100);
       break;
       case DMXBOARD_MODE_RX_DMX512:
+         
+         xSemaphoreTake(sync_dmx, portMAX_DELAY);
+         if(slave_status.dmx512_healthy == true)_healthy = true;
+         else _healthy = false;
+         xSemaphoreGive(sync_dmx);
+         
+         if(_healthy){
+            Serial.printf("MODE_RX_DMX512. %u.%u.%u.%u.%u\n", Dmxwire.read(1),Dmxwire.read(2),Dmxwire.read(3),Dmxwire.read(4),Dmxwire.read(5));
+         }else{
+            Serial.print("MODE_RX_DMX512. FAIL\n");
+         }
 
-         Serial.println("MODE_RX_DMX512");
-         delay(500);
+         delay(100);
       break;
 
       case DMXBOARD_MODE_RX_NRF24:

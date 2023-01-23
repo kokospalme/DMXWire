@@ -55,7 +55,7 @@
 #define SETTINGID_HARDRESET 2    //saves default settings to EEPROM  and reset slave device
 #define SETTINGID_SET_IOMODE_TX_DMX512 10
 #define SETTINGID_SET_IOMODE_TX_NRF24 11
-#define SETTINGID_SET_IOMODE_TX_NRF24 12
+#define SETTINGID_SET_IOMODE_RX_DMX512 12
 #define SETTINGID_SET_IOMODE_RX_NRF24 13
 #define SETTINGID_SET_IOMODE_DMX512TONRF24 14
 #define SETTINGID_SET_IOMODE_NRF24TODMX512 15
@@ -73,7 +73,8 @@
 #define SETTINGID_SET_NRF24_CHANNEL_AUTOMODE 256
 #define SETTINGID_GET_NRF24_CHANNEL 34
 
-
+// multicore stuff
+#define DMX512_CORE 0
 #define NRF24_CORE 0
 
 struct dmxwire_request_t{
@@ -97,6 +98,11 @@ struct dmxwire_settings_t{
 	unsigned long timeout_wire_ms = 500;	//timeouts
 	unsigned long timeout_dmx512_ms = 500;
 	unsigned long timeout_nrf24_ms = 500;
+};
+
+struct dmxwire_status_t{
+   bool dmx512_healthy = false;
+   bool nrf24_healthy = false;
 };
 
 class DMXWire {
@@ -170,12 +176,16 @@ private:
    /* dedicated devices */
    static RF24 *radio;
    static nrf24Data_t nrf24;  //data for nrf24
-   // static void dmx512rx_task(void*pvParameters);
-   // static void dmx512tx_task(void*pvParameters);
+
+   //master's tasks
    static void master_dmx512rx_task(void*pvParameters);
+
+   //slave's tasks
+   static void slave_dmx512rx_task(void*pvParameters);
    static void nrf24tx_task(void*pvParameters);   //transmit over nrf24 module
    static void nrf24rx_task(void*pvParameters);
    static void nrf24rx_toDmx512(void*pvParameters);
+   static dmxwire_status_t slave_status;
    
 
 	static int packetBusy;	//is packet busy? 

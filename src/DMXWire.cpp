@@ -19,6 +19,7 @@ dmxwire_settings_t DMXWire::config;
 SemaphoreHandle_t DMXWire::sync_dmx;
 SemaphoreHandle_t DMXWire::sync_config;
 dmxwire_request_t DMXWire::request;
+dmxwire_status_t DMXWire::slave_status;
 nrf24Data_t DMXWire::nrf24;
 Preferences *DMXWire::preferences;
 RF24 *DMXWire::radio;
@@ -155,7 +156,47 @@ void DMXWire::write(uint16_t channel, uint8_t value){
 }
 
 
+void DMXWire::slave_dmx512rx_task(void*pvParameters){
+   uint8_t _iomode = 0;
+   uint8_t _ledRxMode = 0;
+   int _ledRxPin = 0;
+   bool _healthy = 0;
+   
+   for(;;){
+      xSemaphoreTake(sync_config, portMAX_DELAY);
+      _iomode = config.ioMode;
+      _ledRxMode = config.ledRxMode;
+      _ledRxPin = config.ledRxpin;
+      xSemaphoreGive(sync_config);
 
+      xSemaphoreTake(sync_dmx, portMAX_DELAY);  //dmx healthy?
+      slave_status.dmx512_healthy = (bool) DMX::IsHealthy();
+      _healthy = slave_status.dmx512_healthy;
+      xSemaphoreGive(sync_dmx);
+
+
+      if(_healthy){ //
+         if(_ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(_ledRxPin, HIGH);
+         uint8_t _buffer[512];
+         DMX::ReadAll(_buffer, 1, 512);
+
+         for(int i = 1; i <= 512 ;i++){   //write from DMX to Wire buffer
+            Dmxwire.write(i, _buffer[i-1]);
+         }
+
+         if(_iomode != DMXBOARD_MODE_RX_DMX512){ //if ioMode is not longer TX NRF24, delete task
+         Serial.println("delete DMX512 RX task");
+            if(_ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(_ledRxPin, LOW);
+            vTaskDelete(NULL);
+         }
+      }else{
+         if(_ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(_ledRxPin, LOW);
+      }
+
+
+      delay(20);
+   }
+}
 
 void DMXWire::nrf24tx_task(void*pvParameters) { //transmit via NRF24
    // radio = new RF24(NRF24_CE_PIN, NRF24_CSN_PIN);  //init radio
