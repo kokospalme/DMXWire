@@ -4,6 +4,7 @@
 void DMXWire::beginMaster(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
    sync_dmx = xSemaphoreCreateMutex(); //create semaphore
    sync_config = xSemaphoreCreateMutex(); //create semaphore
+   Wire.setTimeOut(100);
 	Wire.begin(sda, scl,clock);
 	DMXWire::slaveAddress = slaveaddress;
 }
@@ -16,7 +17,8 @@ void DMXWire::startMaster_rx(uint16_t startChannel, uint16_t noChannels){  //onl
    request.getWholeUniverse = false;
    request.requestChannel = startChannel;
    request.requestNoChannels = noChannels;
-   xTaskCreatePinnedToCore(DMXWire::masterRx_task, "master_rx_task", 1024, NULL, 1, NULL, NRF24_CORE);
+   Serial.println("starting masterRx_task");
+   xTaskCreatePinnedToCore(DMXWire::masterRx_task, "master_rx_task", 2048, NULL, 1, NULL, NRF24_CORE);
 }
 
 void DMXWire::stopMaster_rx(){
@@ -44,18 +46,48 @@ void DMXWire::masterTXcallback(){
 void DMXWire::masterRx_task(void*pvParameters){
    dmxwire_request_t _request = Dmxwire.request;
    uint16_t i = 0;
-   for(;;){
+   bool waiting = false;
+   xSemaphoreTake(sync_config, portMAX_DELAY);
+   unsigned long _timeout = config.timeout_wire_ms;
+   uint16_t _framerate_ms = config.rxFramerate_ms;
+   int _slaveAddress = 8;
+   xSemaphoreGive(sync_config);
 
+   for(;;){
+      
       if(_request.getWholeUniverse){   //ToDo: implement
 
 
       }else{   //get dmx channel byte by byte
-         requestDmx(_request.requestChannel + i);
-         i++;
-         if(i > _request.requestNoChannels -1) i = 0; //reset i
+
+
+         if( millis() > _request.timer + _framerate_ms){
+            _request.timer = millis();
+
+            Dmxwire.requestDmx(_request.requestChannel + i);
+            uint8_t bytesReceived = Wire.requestFrom(_slaveAddress, 2);  //wait for a 2 bytes message
+            if((bool) bytesReceived){
+               uint8_t temp[bytesReceived];
+               Wire.readBytes(temp,bytesReceived);
+
+               if(temp[0] == _request.requestChannel + i){ //if correct channel received: write to Buffer
+               xSemaphoreTake(sync_dmx, portMAX_DELAY);
+               Dmxwire.write(_request.requestChannel + i, temp[1]);
+               xSemaphoreGive(sync_config);
+               }else{
+               Serial.printf("received wrong byte:%u\n", temp);
+               }
+            }else{
+               Serial.println("wire timed out");         
+            }
+            i++;
+            if(i > _request.requestNoChannels -1) i = 0; //reset i
+         }
+      
       }
-      delay(5);
+      delay(2);
    }
+
 }
 
 void DMXWire::master_dmx512rx_task(void*pvParameters){
@@ -73,33 +105,11 @@ void DMXWire::requestDmx(uint16_t channel){
    _packet[0]  = DMXWIRE_PACKET_DMXREQUEST;  //header 0: dmx request
    _packet[1]  = channel;  //header 0: packet No
    _packet[2]  = channel << 8;  //header 0: packet No
-   
+   Serial.printf("request ch:%u\n", channel);
    Wire.beginTransmission(slaveAddress); // transmit to device #xy
 	Wire.write(_packet, DMXWIRE_BYTES_PER_PACKET);
-	Wire.endTransmission();    // stop transmitting
+	Wire.endTransmission(true);    // stop transmitting
    timestamp_wire = millis();
-
-   xSemaphoreTake(sync_config, portMAX_DELAY);
-   unsigned long _timeout = config.timeout_wire_ms;
-   xSemaphoreGive(sync_config);
-
-   while(millis() < timestamp_wire + _timeout){ //wait for slave to answer (within time)
-      uint8_t bytesReceived = Wire.requestFrom(slaveAddress, 2);  //wait for a 2 bytes message
-      if((bool) bytesReceived){
-         uint8_t temp[bytesReceived];
-         Wire.readBytes(temp,bytesReceived);
-
-         if(temp[0] == channel){ //if correct channel received: write to Buffer
-            xSemaphoreTake(sync_dmx, portMAX_DELAY);
-            Dmxwire.write(channel, temp[1]);
-            xSemaphoreGive(sync_config);
-         }else{
-            Serial.printf("received wrong byte:%u\n", temp);
-         }
-      }
-      delay(1);
-   }
-   Serial.println("wire timeout");
 }
 
 void DMXWire::setPacket(){	//master TX
