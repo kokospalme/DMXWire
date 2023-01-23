@@ -78,6 +78,7 @@
 #define NRF24_CORE 0
 
 struct dmxwire_request_t{
+   unsigned long timer = 0;
    uint16_t txCmd0 = 0;
    uint16_t txCmd1 = 0;
    uint16_t requestChannel = 0;
@@ -95,7 +96,7 @@ struct dmxwire_settings_t{
 	uint8_t ledTxMode = DMXWIRE_LED_DMX512;  //indicate TX (default: DMX512)
    uint64_t nrf_RXTXaddress = 0xF0F0F0F0F0LL;
    uint8_t nrf_RXTXchannel = 0;   //rx/tx channel (0 ... 255)
-	unsigned long timeout_wire_ms = 500;	//timeouts
+	unsigned long timeout_wire_ms = 100;	//timeouts
 	unsigned long timeout_dmx512_ms = 500;
 	unsigned long timeout_nrf24_ms = 500;
 };
