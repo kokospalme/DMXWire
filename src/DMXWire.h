@@ -9,7 +9,7 @@
  *  
  *  idle:      150mA
  *  TX NRF24:  150mA
- *  RX NRF24:  170mA
+ *  RX NRF24:  190mA
  */
 
 #ifndef DMXWIRE_H_
@@ -45,26 +45,51 @@
 
 #define DMXWIRE_PACKETTIMEOUT_MS 500 //ms
 
+#define DMXWIRE_PACKET_SETTINGS 255
+#define DMXWIRE_PACKET_DMXREQUEST DMXWIRE_BYTES_PER_PACKET
+#define DMXWIRE_PACKET_DMXREQUEST_PACKET DMXWIRE_BYTES_PER_PACKET + 1
+
 #define SETTINGSID_NONE -1
-#define SETTINGID_SAVE_TO_EEPROM 0
-#define SETTINGID_RESTART DEVICE 1
-#define SETTINGID_HARDRESET 2
-#define SETTINGID_SET_SLAVE_ADD 10
-#define SETTINGID_SET_SLAVEMODE 11
-#define SETTINGID_DMX512_GET_TIMEOUT 20
-#define SETTINGID_DMX512_SET_FPS 21
-#define SETTINGID_NRF24_GET_TIMEOUT 30
-#define SETTINGID_NRF24_GET_NOISE 31
-#define SETTINGID_NRF24_SET_CHANNEL 32
-#define SETTINGID_NRF24_GET_CHANNEL 33
+#define SETTINGID_SAVE_TO_EEPROM 0  //saves settings to EEPROM
+#define SETTINGID_RESTART_DEVICE 1  //restarts the slave device
+#define SETTINGID_HARDRESET 2    //saves default settings to EEPROM  and reset slave device
+#define SETTINGID_SET_IOMODE_TX_DMX512 10
+#define SETTINGID_SET_IOMODE_TX_NRF24 11
+#define SETTINGID_SET_IOMODE_TX_NRF24 12
+#define SETTINGID_SET_IOMODE_RX_NRF24 13
+#define SETTINGID_SET_IOMODE_DMX512TONRF24 14
+#define SETTINGID_SET_IOMODE_NRF24TODMX512 15
+#define SETTINGID_SET_IOMODE_IDLE 18
+#define SETTINGID_GET_IOMODE 19
+
+#define SETTINGID_GET_DMX512_TIMEOUT 20
+#define SETTINGID_SET_DMX512_TIMEOUT 21
+#define SETTINGID_GET_DMX512_FPS 22
+#define SETTINGID_SET_DMX512_FPS 23
+#define SETTINGID_GET_NRF24_TIMEOUT 30
+#define SETTINGID_SET_NRF24_TIMEOUT 31
+#define SETTINGID_GET_NRF24_NOISE 32
+#define SETTINGID_SET_NRF24_CHANNEL 33
+#define SETTINGID_SET_NRF24_CHANNEL_AUTOMODE 256
+#define SETTINGID_GET_NRF24_CHANNEL 34
+
 
 #define NRF24_CORE 0
+
+struct dmxwire_request_t{
+   uint16_t txCmd0 = 0;
+   uint16_t txCmd1 = 0;
+   uint16_t requestChannel = 0;
+   uint16_t requestNoChannels = 0;
+   bool getWholeUniverse = false;
+};
 
 struct dmxwire_settings_t{
    uint8_t ioMode = DMXBOARD_MODE_TX_DMX512; //default iomode: TX over DMX512 (Serial)
 	int ledRxpin = LED_BUILTIN;	//built in LED
 	int ledTxpin = -1;	//off
-	uint8_t txFramerate_ms = DMXBOARD_TX_FOLLOW; //transmit only when master is sending something
+	uint16_t txFramerate_ms = DMXBOARD_TX_FOLLOW; //transmit only when master is sending something
+   uint16_t rxFramerate_ms = 30; //request DMX every __ ms
 	uint8_t ledRxMode = DMXWIRE_LED_WIRE;	//indicate RX (default: Wire)
 	uint8_t ledTxMode = DMXWIRE_LED_DMX512;  //indicate TX (default: DMX512)
    uint64_t nrf_RXTXaddress = 0xF0F0F0F0F0LL;
@@ -84,7 +109,11 @@ public:
 	static void setLedTx(int pin, uint8_t mode);	//set pin and mode for led1
 	static void setLedTx(uint8_t mode);	//set mode for led1
    static void setIomode(uint8_t mode);
-	static void beginMasterTX(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
+
+	static void beginMaster(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
+   static void startMaster_rx();
+   static void startMaster_rx(uint16_t startChannel, uint16_t noChannels);
+
 	static void beginSlaveRX(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
 
 	static void write(uint16_t channel, uint8_t value);
@@ -102,7 +131,10 @@ public:
    static void dmxboardRun();
 
    /** read/write settings **/
-   static void serialhandler();
+   static void serialhandlerSlave();   //handles serial input for Slave
+   static void serialhandlerMaster();  //handles serial input for Master
+   static void settingshandler(uint16_t cmd0, uint16_t cmd1);
+   static void requestDmx(uint16_t channel);   //request dmx from Slave
    static int writeSetting(uint8_t iD, int value); //writes a setting to slave
    static int writeSetting_saveTOEEPROM();
    static void writeSetting_restartSlave();
@@ -126,22 +158,27 @@ private:
 	static uint8_t packetNo;
 	static uint8_t slaveAddress;	//slave's address
 
+   static dmxwire_request_t request;
 	static void requestData();
 	static void setPacket();
-	static void sendPacket();
+	static void sendPacketToSlave();
+   static void sendPacketToMaster();
+   static void sendAck(uint16_t cmd);  //send to master over Wire
+   static void masterRx_task(void*pvParameters);
 
    /* dedicated devices */
    static RF24 *radio;
    static nrf24Data_t nrf24;  //data for nrf24
    // static void dmx512rx_task(void*pvParameters);
    // static void dmx512tx_task(void*pvParameters);
+   static void master_dmx512rx_task(void*pvParameters);
    static void nrf24tx_task(void*pvParameters);   //transmit over nrf24 module
    static void nrf24rx_task(void*pvParameters);
    static void nrf24rx_toDmx512(void*pvParameters);
    
 
 	static int packetBusy;	//is packet busy? 
-	static unsigned long duration;	//capture framerate
+	static unsigned long duration_wire;	//capture framerate
 	static unsigned long timestamp_wire;
    static unsigned long timestamp_dmx512;
    static unsigned long timestamp_nrf24;
