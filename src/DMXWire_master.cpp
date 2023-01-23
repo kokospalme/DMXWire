@@ -3,6 +3,7 @@
 
 void DMXWire::beginMaster(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
    sync_dmx = xSemaphoreCreateMutex(); //create semaphore
+   sync_config = xSemaphoreCreateMutex(); //create semaphore
 	Wire.begin(sda, scl,clock);
 	DMXWire::slaveAddress = slaveaddress;
 }
@@ -53,7 +54,7 @@ void DMXWire::masterRx_task(void*pvParameters){
          i++;
          if(i > _request.requestNoChannels -1) i = 0; //reset i
       }
-
+      delay(5);
    }
 }
 
@@ -96,6 +97,7 @@ void DMXWire::requestDmx(uint16_t channel){
             Serial.printf("received wrong byte:%u\n", temp);
          }
       }
+      delay(1);
    }
    Serial.println("wire timeout");
 }

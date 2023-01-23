@@ -113,6 +113,7 @@ public:
 	static void beginMaster(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
    static void startMaster_rx();
    static void startMaster_rx(uint16_t startChannel, uint16_t noChannels);
+   static void stopMaster_rx();
 
 	static void beginSlaveRX(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
 

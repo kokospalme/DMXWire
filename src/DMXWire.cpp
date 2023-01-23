@@ -356,116 +356,116 @@ void DMXWire::serialhandlerSlave(){   //
 }
 
 void DMXWire::serialhandlerMaster(){   //
-   if(Serial.available()){
-      String _cmd = Serial.readStringUntil('\n');  //read line
-      // Serial.println(_cmd);
-      if(_cmd.indexOf(".") < 0){
-         Serial.println("wrong cmd");
-         return;
-      }
-      String _cmd0 = _cmd.substring(0, _cmd.indexOf("."));
-      String _cmd1 = _cmd.substring(_cmd.indexOf(".")+1, _cmd.length());
+   // if(Serial.available()){
+   //    String _cmd = Serial.readStringUntil('\n');  //read line
+   //    // Serial.println(_cmd);
+   //    if(_cmd.indexOf(".") < 0){
+   //       Serial.println("wrong cmd");
+   //       return;
+   //    }
+   //    String _cmd0 = _cmd.substring(0, _cmd.indexOf("."));
+   //    String _cmd1 = _cmd.substring(_cmd.indexOf(".")+1, _cmd.length());
 
-      uint16_t cmd0 = _cmd0.toInt();
-      uint16_t cmd1 = _cmd1.toInt();
+   //    uint16_t cmd0 = _cmd0.toInt();
+   //    uint16_t cmd1 = _cmd1.toInt();
 
-      if(cmd0 == SETTINGID_SAVE_TO_EEPROM){ //write to EEPROM
-         Serial.println("write things to eeprom...");
-         Dmxwire.writeConfig();
-         sendAck(0);
-      }else if(cmd0 == SETTINGID_RESTART_DEVICE){   //restart
-         Serial.println("restart device");
-         sendAck(0);
-         ESP.restart();
-      }else if(cmd0 == SETTINGID_HARDRESET){   //hardreset device
-         Serial.println("hardreset Device...");
-         dmxwire_settings_t _newConfig;
-         xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
-         config = _newConfig;
-         xSemaphoreGive(sync_config);
-         Dmxwire.writeConfig();
-         sendAck((uint16_t)_cfg.ioMode);
-         Serial.println("restart device");
-         ESP.restart();
-      }else if(cmd0 == SETTINGID_SET_IOMODE_IDLE){   //ioMode idle
-         _cfg.ioMode = DMXBOARD_MODE_OFF;
-         Serial.printf("set ioMode: idle(%u)\n", _cfg.ioMode);
-         sendAck((uint16_t)_cfg.ioMode);
-      }else if(cmd0 == SETTINGID_SET_IOMODE_TX_DMX512){ //ioMode TX dmx512
-         _cfg.ioMode = DMXBOARD_MODE_TX_DMX512;
-         Serial.printf("set ioMode: RX dmx512(%u)\n", _cfg.ioMode);
-         sendAck((uint16_t)_cfg.ioMode);
-      }else if(cmd0 == SETTINGID_SET_IOMODE_TX_NRF24){ //ioMode TX NRF24
-         _cfg.ioMode = DMXBOARD_MODE_TX_NRF24;
-         Serial.printf("set ioMode: tx nrf24(%u)\n", _cfg.ioMode);
-         sendAck((uint16_t)_cfg.ioMode);
-      }else if(cmd0 == SETTINGID_SET_IOMODE_TX_NRF24){ //ioMode RX dmx512
-         _cfg.ioMode = DMXBOARD_MODE_RX_DMX512;
-         Serial.printf("set ioMode: tx dmx512(%u)\n", _cfg.ioMode);
-         sendAck((uint16_t)_cfg.ioMode);
-      }else if(cmd0 == SETTINGID_SET_IOMODE_RX_NRF24){ //ioMode RX NRF24
-         _cfg.ioMode = DMXBOARD_MODE_RX_NRF24;
-         Serial.printf("set ioMode: rx nrf24(%u)\n", _cfg.ioMode);
-         sendAck((uint16_t)_cfg.ioMode);
-      }else if(cmd0 == SETTINGID_SET_IOMODE_DMX512TONRF24){ //ioMode DMX to NRF24
-         _cfg.ioMode = DMXBOARD_MODE_DMX512TONRF24;
-         Serial.printf("set ioMode: dmx512 to nrf24(%u)\n", _cfg.ioMode);
-         sendAck((uint16_t)_cfg.ioMode);
-      }else if(cmd0 == SETTINGID_SET_IOMODE_NRF24TODMX512){ //ioMode DMX to NRF24
-         _cfg.ioMode = DMXBOARD_MODE_NRF24TODMX512;
-         Serial.printf("set ioMode: nrf24 to dmx512(%u)\n", _cfg.ioMode);
-         sendAck((uint16_t)_cfg.ioMode);
-      }else if(cmd0 == SETTINGID_GET_IOMODE){ //get io Mode
-         Serial.printf("get ioMode:%u\n", _cfg.ioMode);
-         sendAck((uint16_t)_cfg.ioMode);
-
-
-      }else if(cmd0 == SETTINGID_GET_DMX512_TIMEOUT){ //get dmx512 timeout
-         Serial.printf("get dmx512 timeout:%u\n", _cfg.timeout_dmx512_ms);
-         sendAck((uint16_t)_cfg.timeout_dmx512_ms);
-
-      }else if(cmd0 == SETTINGID_SET_DMX512_TIMEOUT){ //set dmx512 timeout
-         _cfg.timeout_dmx512_ms = (unsigned long) cmd1;
-         Serial.printf("set dmx512 timeout:%u\n", _cfg.timeout_dmx512_ms);
-         sendAck((uint16_t)_cfg.timeout_dmx512_ms);
-
-      }else if(cmd0 == SETTINGID_GET_DMX512_FPS){ //get dmx512 transmit FPS
-         Serial.printf("get dmx512 timeout:%u\n", _cfg.txFramerate_ms);
-         sendAck((uint16_t)_cfg.txFramerate_ms);
-
-      }else if(cmd0 == SETTINGID_SET_DMX512_FPS){ //set dmx512 transmit FPS
-         _cfg.txFramerate_ms = (uint8_t) cmd1;
-         Serial.printf("set dmx512 timeout:%u\n", _cfg.txFramerate_ms);
-         sendAck((uint16_t)_cfg.txFramerate_ms);
+   //    if(cmd0 == SETTINGID_SAVE_TO_EEPROM){ //write to EEPROM
+   //       Serial.println("write things to eeprom...");
+   //       Dmxwire.writeConfig();
+   //       sendAck(0);
+   //    }else if(cmd0 == SETTINGID_RESTART_DEVICE){   //restart
+   //       Serial.println("restart device");
+   //       sendAck(0);
+   //       ESP.restart();
+   //    }else if(cmd0 == SETTINGID_HARDRESET){   //hardreset device
+   //       Serial.println("hardreset Device...");
+   //       dmxwire_settings_t _newConfig;
+   //       xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+   //       config = _newConfig;
+   //       xSemaphoreGive(sync_config);
+   //       Dmxwire.writeConfig();
+   //       sendAck((uint16_t)_cfg.ioMode);
+   //       Serial.println("restart device");
+   //       ESP.restart();
+   //    }else if(cmd0 == SETTINGID_SET_IOMODE_IDLE){   //ioMode idle
+   //       _cfg.ioMode = DMXBOARD_MODE_OFF;
+   //       Serial.printf("set ioMode: idle(%u)\n", _cfg.ioMode);
+   //       sendAck((uint16_t)_cfg.ioMode);
+   //    }else if(cmd0 == SETTINGID_SET_IOMODE_TX_DMX512){ //ioMode TX dmx512
+   //       _cfg.ioMode = DMXBOARD_MODE_TX_DMX512;
+   //       Serial.printf("set ioMode: RX dmx512(%u)\n", _cfg.ioMode);
+   //       sendAck((uint16_t)_cfg.ioMode);
+   //    }else if(cmd0 == SETTINGID_SET_IOMODE_TX_NRF24){ //ioMode TX NRF24
+   //       _cfg.ioMode = DMXBOARD_MODE_TX_NRF24;
+   //       Serial.printf("set ioMode: tx nrf24(%u)\n", _cfg.ioMode);
+   //       sendAck((uint16_t)_cfg.ioMode);
+   //    }else if(cmd0 == SETTINGID_SET_IOMODE_TX_NRF24){ //ioMode RX dmx512
+   //       _cfg.ioMode = DMXBOARD_MODE_RX_DMX512;
+   //       Serial.printf("set ioMode: tx dmx512(%u)\n", _cfg.ioMode);
+   //       sendAck((uint16_t)_cfg.ioMode);
+   //    }else if(cmd0 == SETTINGID_SET_IOMODE_RX_NRF24){ //ioMode RX NRF24
+   //       _cfg.ioMode = DMXBOARD_MODE_RX_NRF24;
+   //       Serial.printf("set ioMode: rx nrf24(%u)\n", _cfg.ioMode);
+   //       sendAck((uint16_t)_cfg.ioMode);
+   //    }else if(cmd0 == SETTINGID_SET_IOMODE_DMX512TONRF24){ //ioMode DMX to NRF24
+   //       _cfg.ioMode = DMXBOARD_MODE_DMX512TONRF24;
+   //       Serial.printf("set ioMode: dmx512 to nrf24(%u)\n", _cfg.ioMode);
+   //       sendAck((uint16_t)_cfg.ioMode);
+   //    }else if(cmd0 == SETTINGID_SET_IOMODE_NRF24TODMX512){ //ioMode DMX to NRF24
+   //       _cfg.ioMode = DMXBOARD_MODE_NRF24TODMX512;
+   //       Serial.printf("set ioMode: nrf24 to dmx512(%u)\n", _cfg.ioMode);
+   //       sendAck((uint16_t)_cfg.ioMode);
+   //    }else if(cmd0 == SETTINGID_GET_IOMODE){ //get io Mode
+   //       Serial.printf("get ioMode:%u\n", _cfg.ioMode);
+   //       sendAck((uint16_t)_cfg.ioMode);
 
 
-      }else if(cmd0 == SETTINGID_GET_NRF24_TIMEOUT){ //get nrf24 timeout
-         Serial.printf("get nrf24 timeout:%u\n", _cfg.timeout_nrf24_ms);
-         sendAck((uint16_t)_cfg.timeout_nrf24_ms);
+   //    }else if(cmd0 == SETTINGID_GET_DMX512_TIMEOUT){ //get dmx512 timeout
+   //       Serial.printf("get dmx512 timeout:%u\n", _cfg.timeout_dmx512_ms);
+   //       sendAck((uint16_t)_cfg.timeout_dmx512_ms);
 
-      }else if(cmd0 == SETTINGID_SET_NRF24_TIMEOUT){ //get nrf24 timeout
-         _cfg.timeout_nrf24_ms = (unsigned long) cmd1;
-         Serial.printf("set nrf24 timeout:%u\n", _cfg.timeout_nrf24_ms);
-         sendAck((uint16_t)_cfg.timeout_nrf24_ms);
+   //    }else if(cmd0 == SETTINGID_SET_DMX512_TIMEOUT){ //set dmx512 timeout
+   //       _cfg.timeout_dmx512_ms = (unsigned long) cmd1;
+   //       Serial.printf("set dmx512 timeout:%u\n", _cfg.timeout_dmx512_ms);
+   //       sendAck((uint16_t)_cfg.timeout_dmx512_ms);
 
-      }else if(cmd0 == SETTINGID_GET_NRF24_NOISE){ //get nrf24 timeout
-         uint8_t _noise = random(0,255);  //ToDo: implement getNoise
-         Serial.printf("get nrf24 noise:%u\n", _noise);
-         sendAck((uint16_t)_noise);
-      }else if(cmd0 == SETTINGID_SET_NRF24_CHANNEL){ //get nrf24 timeout
-         if(cmd1 == SETTINGID_SET_NRF24_CHANNEL_AUTOMODE){
-            _cfg.nrf_RXTXchannel = 0;
-            Serial.println("set nrf24 channel: automode");
-         }else{
-            _cfg.nrf_RXTXchannel = (uint8_t) cmd1;
-            Serial.printf("set nrf24 channel:%u\n", _cfg.nrf_RXTXchannel);
-         }
-         sendAck((uint16_t)_cfg.nrf_RXTXchannel);
-      }else if(cmd0 == SETTINGID_GET_NRF24_CHANNEL){ //get nrf24 timeout
-         Serial.printf("get nrf24 channel:%u\n", _cfg.nrf_RXTXchannel);
-         sendAck((uint16_t)_cfg.nrf_RXTXchannel);
-      }
-   }
+   //    }else if(cmd0 == SETTINGID_GET_DMX512_FPS){ //get dmx512 transmit FPS
+   //       Serial.printf("get dmx512 timeout:%u\n", _cfg.txFramerate_ms);
+   //       sendAck((uint16_t)_cfg.txFramerate_ms);
+
+   //    }else if(cmd0 == SETTINGID_SET_DMX512_FPS){ //set dmx512 transmit FPS
+   //       _cfg.txFramerate_ms = (uint8_t) cmd1;
+   //       Serial.printf("set dmx512 timeout:%u\n", _cfg.txFramerate_ms);
+   //       sendAck((uint16_t)_cfg.txFramerate_ms);
+
+
+   //    }else if(cmd0 == SETTINGID_GET_NRF24_TIMEOUT){ //get nrf24 timeout
+   //       Serial.printf("get nrf24 timeout:%u\n", _cfg.timeout_nrf24_ms);
+   //       sendAck((uint16_t)_cfg.timeout_nrf24_ms);
+
+   //    }else if(cmd0 == SETTINGID_SET_NRF24_TIMEOUT){ //get nrf24 timeout
+   //       _cfg.timeout_nrf24_ms = (unsigned long) cmd1;
+   //       Serial.printf("set nrf24 timeout:%u\n", _cfg.timeout_nrf24_ms);
+   //       sendAck((uint16_t)_cfg.timeout_nrf24_ms);
+
+   //    }else if(cmd0 == SETTINGID_GET_NRF24_NOISE){ //get nrf24 timeout
+   //       uint8_t _noise = random(0,255);  //ToDo: implement getNoise
+   //       Serial.printf("get nrf24 noise:%u\n", _noise);
+   //       sendAck((uint16_t)_noise);
+   //    }else if(cmd0 == SETTINGID_SET_NRF24_CHANNEL){ //get nrf24 timeout
+   //       if(cmd1 == SETTINGID_SET_NRF24_CHANNEL_AUTOMODE){
+   //          _cfg.nrf_RXTXchannel = 0;
+   //          Serial.println("set nrf24 channel: automode");
+   //       }else{
+   //          _cfg.nrf_RXTXchannel = (uint8_t) cmd1;
+   //          Serial.printf("set nrf24 channel:%u\n", _cfg.nrf_RXTXchannel);
+   //       }
+   //       sendAck((uint16_t)_cfg.nrf_RXTXchannel);
+   //    }else if(cmd0 == SETTINGID_GET_NRF24_CHANNEL){ //get nrf24 timeout
+   //       Serial.printf("get nrf24 channel:%u\n", _cfg.nrf_RXTXchannel);
+   //       sendAck((uint16_t)_cfg.nrf_RXTXchannel);
+   //    }
+   // }
 }
 
 
