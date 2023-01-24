@@ -66,8 +66,8 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
             Serial.printf("Master requests DMX(ch:%u) E:out of range\n", _ch);
             #endif
          }
-         Serial.printf("send to Master::%u.%u.%u\n", txBuffer[0], txBuffer[1], txBuffer[2]);
-         Wire.write(txBuffer, 3);
+         Serial.printf("send to Master(ch:%u)%u.%u.%u\n", _ch, txBuffer[0], txBuffer[1], txBuffer[2]);
+         Wire.slaveWrite(txBuffer, 3);
 
          
 
