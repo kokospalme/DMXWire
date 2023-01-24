@@ -115,13 +115,13 @@ void DMXWire::masterRx_task(void*pvParameters){
                uint8_t temp[bytesReceived];
                Wire.readBytes(temp,bytesReceived); //receive bytes
                uint16_t _rxCh;
-               uint16_t _reqCh = ((uint16_t)(temp[0]) >> 8) | (uint16_t)temp[1]; //array to uin16_t
+               uint16_t _reqCh = ((uint16_t)(temp[0]) << 8) | (uint16_t)temp[1]; //array to uin16_t
                if(temp[0] == _request.requestChannel + i){ //if correct channel received: write to Buffer
                xSemaphoreTake(sync_dmx, portMAX_DELAY);
                Dmxwire.write(_request.requestChannel + i, temp[1]);
                xSemaphoreGive(sync_config);
                }else{
-               Serial.printf("received wrong channel:%u\n", _reqCh);
+               Serial.printf("received wrong channel.msg:%u.%u.%u\n", temp[0], temp[0], temp[0]);
                }
             }else{
                Serial.println("wire timed out");         
@@ -155,6 +155,7 @@ void DMXWire::requestDmx(uint16_t channel){
    _packet[0]  = DMXWIRE_PACKET_DMXREQUEST;  //header 0: dmx request
    _packet[1] = (uint8_t) (channel >> 8);
    _packet[2] = (uint8_t) channel;
+
    Serial.printf("request ch:%u\n", channel);
    Wire.beginTransmission(slaveAddress); // transmit to device #xy
 	Wire.write(_packet, 3);

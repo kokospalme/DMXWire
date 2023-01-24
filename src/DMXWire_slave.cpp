@@ -1,16 +1,25 @@
 #include <Arduino.h>
 #include "DMXWire.h"
 
+
+/*
+(Slave) callback function when Master sent Data.
+timestamp_wire is begin updated.
+*/
 void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
-   timestamp_wire = millis();
+   timestamp_wire = millis(); //update timestamp_wire
 	uint8_t _counter = 0;
 	uint8_t buffer[bufSize];
    if(bufSize > DMXWIRE_BYTES_PER_PACKET) return;	//return if buffer too large
+      xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+      uint8_t _ledRxMode = config.ledRxMode;
+      int _ledRxPin = config.ledTxpin;
+      xSemaphoreGive(sync_config);
 	
-	for(int i=0; i < bufSize; i++){  //read every byte to buffer
+	for(int i=0; i < bufSize; i++){  //*read every byte to buffer
       xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
 		buffer[i] = Wire.read();
-      if(config.ledRxMode == DMXWIRE_LED_WIRE) digitalWrite(config.ledRxpin, HIGH);
+      if(_ledRxMode == DMXWIRE_LED_WIRE) digitalWrite(_ledRxPin, HIGH);
       xSemaphoreGive(sync_dmx);
 		// Serial.print(buffer[i], HEX);
 	}
@@ -19,7 +28,7 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
 	packetNo = buffer[0];
 	
 
-	if(packetNo < DMXWIRE_PACKETS){	// if packet in packetrange: write buffer to packet
+	if(packetNo < DMXWIRE_PACKETS){//* case: Master is sending a DMX packet
 
 		if(buffer[0] == DMXWIRE_PACKETS-1){ //duration for a whole packet-set of 512 bytes
 			duration_wire = millis() - timestamp_wire;
@@ -28,38 +37,53 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
       for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
          packets[packetNo][i] = buffer[i];
       }
+      #ifdef   DMXWIRE_DEBUG_SLAVE_WIRE
+      Serial.print("got DMX from master:");
+      if(packetNo== 0){
+         Serial.print(Dmxwire.getDuration());
+         Serial.printf("\t%u \t%u \t%u \t%u \t%u \n", packets[0][1], packets[0][2], packets[0][3], packets[0][4], packets[0][5]);
+      }
+      #endif
 
-      // if(packetNo== 0){
-      // 	Serial.print(Dmxwire.getDuration());
-      // 	Serial.printf("\t%u \t%u \t%u \t%u \t%u \n", packets[0][1], packets[0][2], packets[0][3], packets[0][4], packets[0][5]);
-      // }
 
 
-	}else{	//else: setting codes or unknown
-
-      if(buffer[0] == DMXWIRE_PACKET_DMXREQUEST){ //dmx request
+	}else if(buffer[0] == DMXWIRE_PACKET_DMXREQUEST){ //* case: Master is requesting a single DMX packet
          uint8_t txBuffer[3] = {0,0,0};
          uint16_t _ch = (uint8_t) buffer[1] << 8 | (uint8_t) buffer[2];
 
          txBuffer[0] = (uint8_t) (_ch >> 8);
          txBuffer[1] = (uint8_t) _ch;
+
          if(_ch > 0 && _ch <=512){
             xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
             txBuffer[2] = Dmxwire.read(_ch);
-            Serial.printf("ch%u:%u\n", _ch, txBuffer[2]);
-            xSemaphoreGive(sync_dmx);         
+            xSemaphoreGive(sync_dmx);    
+
+            #ifdef   DMXWIRE_DEBUG_SLAVE_WIRE
+            Serial.printf("Master requests DMX(ch:%u) tx value:%u\n", _ch, txBuffer[2]);
+            #endif
          }else{
-            Serial.printf("ch out of range: %u\n", _ch);
+            #ifdef   DMXWIRE_DEBUG_SLAVE_WIRE
+            Serial.printf("Master requests DMX(ch:%u) E:out of range\n", _ch);
+            #endif
          }
          Wire.write(txBuffer, 3);
 
          
 
-      }else if(buffer[0] == DMXWIRE_PACKET_DMXREQUEST_PACKET){
+      }else if(buffer[0] == DMXWIRE_PACKET_DMXREQUEST_PACKET){ //* case: Master is requesting a DMX packet
+
+
          if(buffer[1] >= DMXWIRE_PACKETS){
-            Serial.println("unknown packet");
+            #ifdef   DMXWIRE_DEBUG_SLAVE_WIRE
+            Serial.printf("Master requests DMX packet(%u) E:unknown\n", buffer[1]);
+            #endif
             return;
          }
+         #ifdef   DMXWIRE_DEBUG_SLAVE_WIRE
+         Serial.printf("Master requests DMX packet(%u)\n", buffer[1]);
+         #endif
+
          packetNo = buffer[1];
          xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
          packets[packetNo][0] = packetNo;	//head: info which packet is being send
@@ -71,7 +95,6 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
          uint16_t _cmd1 = buffer[3] << 8 | buffer[4]; //LBHB
          settingshandler(_cmd0, _cmd1);
       }
-	}
 
 	packetNo = DMXWIRE_NOTBUSY;	//reset "busy-variable"
 
