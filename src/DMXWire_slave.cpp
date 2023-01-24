@@ -37,19 +37,36 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
 
 	}else{	//else: setting codes or unknown
 
-      if(packetNo == DMXWIRE_PACKET_DMXREQUEST){ //dmx request
+      if(buffer[0] == DMXWIRE_PACKET_DMXREQUEST){ //dmx request
+         uint8_t txBuffer[3] = {0,0,0};
+         uint16_t _ch = (uint8_t) buffer[1] << 8 | (uint8_t) buffer[2];
 
+         txBuffer[0] = (uint8_t) (_ch >> 8);
+         txBuffer[1] = (uint8_t) _ch;
+         if(_ch > 0 && _ch <=512){
+            xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
+            txBuffer[2] = Dmxwire.read(_ch);
+            Serial.printf("ch%u:%u\n", _ch, txBuffer[2]);
+            xSemaphoreGive(sync_dmx);         
+         }else{
+            Serial.printf("ch out of range: %u\n", _ch);
+         }
+         Wire.write(txBuffer, 3);
+
+         
+
+      }else if(buffer[0] == DMXWIRE_PACKET_DMXREQUEST_PACKET){
+         if(buffer[1] >= DMXWIRE_PACKETS){
+            Serial.println("unknown packet");
+            return;
+         }
          packetNo = buffer[1];
-
          xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
          packets[packetNo][0] = packetNo;	//head: info which packet is being send
          xSemaphoreGive(sync_dmx);
-
          Dmxwire.sendPacketToMaster();	//send packet
-
-      }else if(packetNo == DMXWIRE_PACKET_SETTINGS){  //settings
+      }else if(buffer[0] == DMXWIRE_PACKET_SETTINGS){  //settings
          if(bufSize < 5) return; //packet too small
-
          uint16_t _cmd0 = buffer[1] << 8 | buffer[2]; //LBHB
          uint16_t _cmd1 = buffer[3] << 8 | buffer[4]; //LBHB
          settingshandler(_cmd0, _cmd1);

@@ -69,8 +69,9 @@ void DMXWire::masterRx_task(void*pvParameters){
             uint8_t bytesReceived = Wire.requestFrom(_slaveAddress, 3);  //wait for a 3 bytes message
             if((bool) bytesReceived){
                uint8_t temp[bytesReceived];
-               Wire.readBytes(temp,bytesReceived);
-               uint16_t _reqCh = ((uint16_t)(temp[0]) << 8) | (uint16_t)temp[1]; //array to uin16_t
+               Wire.readBytes(temp,bytesReceived); //receive bytes
+               uint16_t _rxCh;
+               uint16_t _reqCh = ((uint16_t)(temp[0]) >> 8) | (uint16_t)temp[1]; //array to uin16_t
                if(temp[0] == _request.requestChannel + i){ //if correct channel received: write to Buffer
                xSemaphoreTake(sync_dmx, portMAX_DELAY);
                Dmxwire.write(_request.requestChannel + i, temp[1]);
@@ -104,11 +105,12 @@ void DMXWire::master_dmx512rx_task(void*pvParameters){
 void DMXWire::requestDmx(uint16_t channel){
    uint8_t _packet[4];
    _packet[0]  = DMXWIRE_PACKET_DMXREQUEST;  //header 0: dmx request
-   _packet[1]  = channel;  //header 0: packet No
-   _packet[2]  = channel << 8;  //header 0: packet No
+
+   _packet[1] = (uint8_t) (channel >> 8);
+   _packet[2] = (uint8_t) channel;
    Serial.printf("request ch:%u\n", channel);
    Wire.beginTransmission(slaveAddress); // transmit to device #xy
-	Wire.write(_packet, DMXWIRE_BYTES_PER_PACKET);
+	Wire.write(_packet, 3);
 	Wire.endTransmission(true);    // stop transmitting
    timestamp_wire = millis();
 }
