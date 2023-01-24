@@ -177,11 +177,12 @@ void DMXWire::slave_dmx512rx_task(void*pvParameters){
 
       if(_healthy){ //
          if(_ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(_ledRxPin, HIGH);
-         uint8_t _buffer[512];
-         DMX::ReadAll(_buffer, 1, 512);
+         // uint8_t _buffer[512];
+         // DMX::ReadAll(_buffer, 1, 512);
 
          for(int i = 1; i <= 512 ;i++){   //write from DMX to Wire buffer
-            Dmxwire.write(i, _buffer[i-1]);
+            // Dmxwire.write(i, _buffer[i-1]);
+            Dmxwire.write(i, DMX::Read(i));
          }
 
          if(_iomode != DMXBOARD_MODE_RX_DMX512){ //if ioMode is not longer TX NRF24, delete task
