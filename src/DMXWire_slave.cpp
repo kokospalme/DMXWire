@@ -21,7 +21,8 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
 		buffer[i] = Wire.read();
       if(_ledRxMode == DMXWIRE_LED_WIRE) digitalWrite(_ledRxPin, HIGH);
       xSemaphoreGive(sync_dmx);
-		// Serial.print(buffer[i], HEX);
+		// Serial.print(buffer[i], DEC);
+      // Serial.print(".");
 	}
 	// Serial.println("");
 
@@ -29,7 +30,7 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
 	
 
 	if(packetNo < DMXWIRE_PACKETS){//* case: Master is sending a DMX packet
-
+   // Serial.println("HIER_A");
 		if(buffer[0] == DMXWIRE_PACKETS-1){ //duration for a whole packet-set of 512 bytes
 			duration_wire = millis() - timestamp_wire;
 		}
@@ -48,6 +49,7 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
 
 
 	}else if(buffer[0] == DMXWIRE_PACKET_DMXREQUEST){ //* case: Master is requesting a single DMX packet
+   // Serial.println("HIER_B");
          uint8_t txBuffer[3] = {0,0,0};
          uint16_t _ch = (uint8_t) buffer[1] << 8 | (uint8_t) buffer[2];
 
@@ -55,10 +57,7 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
          txBuffer[1] = (uint8_t) _ch;
 
          if(_ch > 0 && _ch <=512){
-            xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
             txBuffer[2] = Dmxwire.read(_ch);
-            xSemaphoreGive(sync_dmx);    
-
             #ifdef   DMXWIRE_DEBUG_SLAVE_WIRE
             Serial.printf("Master requests DMX(ch:%u) tx value:%u\n", _ch, txBuffer[2]);
             #endif
@@ -67,12 +66,13 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
             Serial.printf("Master requests DMX(ch:%u) E:out of range\n", _ch);
             #endif
          }
+         Serial.printf("send to Master::%u.%u.%u\n", txBuffer[0], txBuffer[1], txBuffer[2]);
          Wire.write(txBuffer, 3);
 
          
 
       }else if(buffer[0] == DMXWIRE_PACKET_DMXREQUEST_PACKET){ //* case: Master is requesting a DMX packet
-
+      Serial.println("HIER_C");
 
          if(buffer[1] >= DMXWIRE_PACKETS){
             #ifdef   DMXWIRE_DEBUG_SLAVE_WIRE

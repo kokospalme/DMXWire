@@ -121,7 +121,7 @@ void DMXWire::masterRx_task(void*pvParameters){
                Dmxwire.write(_request.requestChannel + i, temp[1]);
                xSemaphoreGive(sync_config);
                }else{
-               Serial.printf("received wrong channel.msg:%u.%u.%u\n", temp[0], temp[0], temp[0]);
+               Serial.printf("received wrong channel.msg:%u.%u.%u\n", temp[0], temp[1], temp[2]);
                }
             }else{
                Serial.println("wire timed out");         
