@@ -38,17 +38,20 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
       for(int i = 0; i < DMXWIRE_BYTES_PER_PACKET; i++){
          packets[packetNo][i] = buffer[i];
       }
+
+      
       #ifdef   DMXWIRE_DEBUG_SLAVE_WIRE
-      Serial.print("got DMX from master:");
-      if(packetNo== 0){
-         Serial.print(Dmxwire.getDuration());
-         Serial.printf("\t%u \t%u \t%u \t%u \t%u \n", packets[0][1], packets[0][2], packets[0][3], packets[0][4], packets[0][5]);
-      }
+      // Serial.print("got DMX from master:");
+      // if(packetNo== 0){
+      //    Serial.print(Dmxwire.getDuration());
+      //    Serial.printf("\t%u \t%u \t%u \t%u \t%u \n", packets[0][1], packets[0][2], packets[0][3], packets[0][4], packets[0][5]);
+      // }
       #endif
 
 
 
 	}else if(buffer[0] == DMXWIRE_PACKET_DMXREQUEST){ //* case: Master is requesting a single DMX packet
+   // Serial.printf("RX:%u.%u.%u\n", buffer[0], buffer[1], buffer[2]);
    // Serial.println("HIER_B");
          uint8_t txBuffer[3] = {0,0,0};
          uint16_t _ch = (uint8_t) buffer[1] << 8 | (uint8_t) buffer[2];
@@ -56,6 +59,8 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
          txBuffer[0] = (uint8_t) (_ch >> 8);
          txBuffer[1] = (uint8_t) _ch;
 
+
+         
          if(_ch > 0 && _ch <=512){
             txBuffer[2] = Dmxwire.read(_ch);
             #ifdef   DMXWIRE_DEBUG_SLAVE_WIRE
@@ -66,13 +71,14 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
             Serial.printf("Master requests DMX(ch:%u) E:out of range\n", _ch);
             #endif
          }
-         Serial.printf("send to Master(ch:%u)%u.%u.%u\n", _ch, txBuffer[0], txBuffer[1], txBuffer[2]);
+         // Serial.printf("TX:%u.%u.%u\n", txBuffer[0], txBuffer[1], txBuffer[2]);
+         // Serial.printf("send to Master(ch:%u)%u.%u.%u\n", _ch, txBuffer[0], txBuffer[1], txBuffer[2]);
          Wire.slaveWrite(txBuffer, 3);
 
          
 
       }else if(buffer[0] == DMXWIRE_PACKET_DMXREQUEST_PACKET){ //* case: Master is requesting a DMX packet
-      Serial.println("HIER_C");
+      // Serial.println("HIER_C");
 
          if(buffer[1] >= DMXWIRE_PACKETS){
             #ifdef   DMXWIRE_DEBUG_SLAVE_WIRE
@@ -321,12 +327,12 @@ void DMXWire::dmxboardRun(){
             DMX::Write(i, Dmxwire.read(i));
          }
          if(config.ledTxMode == DMXWIRE_LED_DMX512) digitalWrite(config.ledTxpin, LOW);
-         Serial.printf("TX_DMX512. ch1:%u\n",DMX::Read(1));  //read from Dmx buffer
+         // Serial.printf("TX_DMX512. ch1:%u\n",DMX::Read(1));  //read from Dmx buffer
          delay(20);
 
       break;
       case DMXBOARD_MODE_TX_NRF24:
-         Serial.printf("TX_NRF24. ch1:%u\n",nrf24.shadow_DMX[1]);  //read from nrf24 buffer
+         // Serial.printf("TX_NRF24. ch1:%u\n",nrf24.shadow_DMX[1]);  //read from nrf24 buffer
          delay(100);
       break;
       case DMXBOARD_MODE_RX_DMX512:
@@ -337,24 +343,24 @@ void DMXWire::dmxboardRun(){
          xSemaphoreGive(sync_dmx);
          
          if(_healthy){
-            Serial.printf("MODE_RX_DMX512. %u.%u.%u.%u.%u\n", Dmxwire.read(1),Dmxwire.read(2),Dmxwire.read(3),Dmxwire.read(4),Dmxwire.read(5));
+            // Serial.printf("MODE_RX_DMX512. %u.%u.%u.%u.%u\n", Dmxwire.read(1),Dmxwire.read(2),Dmxwire.read(3),Dmxwire.read(4),Dmxwire.read(5));
          }else{
-            Serial.print("MODE_RX_DMX512. FAIL\n");
+            // Serial.print("MODE_RX_DMX512. FAIL\n");
          }
 
          delay(100);
       break;
 
       case DMXBOARD_MODE_RX_NRF24:
-         Serial.printf("RX_NRF24. ch1:%u\n",Dmxwire.read(1));  //read from nrf24 buffer
+         // Serial.printf("RX_NRF24. ch1:%u\n",Dmxwire.read(1));  //read from nrf24 buffer
          delay(100);
       break;
       case DMXBOARD_MODE_DMX512TONRF24:
-         Serial.printf("DMX512TONRF24. ch1:%u\n",nrf24.shadow_DMX[1]);  //read from nrf24 buffer
+         // Serial.printf("DMX512TONRF24. ch1:%u\n",nrf24.shadow_DMX[1]);  //read from nrf24 buffer
          delay(100);
       break;
       case DMXBOARD_MODE_NRF24TODMX512:
-         Serial.printf("NRF24TODMX512. ch1:%u\n",Dmxwire.read(1));  //read from nrf24 buffer
+         // Serial.printf("NRF24TODMX512. ch1:%u\n",Dmxwire.read(1));  //read from nrf24 buffer
          delay(100);
       break;
 
