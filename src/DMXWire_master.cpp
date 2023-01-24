@@ -1,7 +1,15 @@
 #include <Arduino.h>
 #include "DMXWire.h"
 
-void DMXWire::beginMaster(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
+/*
+(Master) Begins Master device's peripherals:
+Wire.begin(), xSemaphoreCreateMutex(), slaveAddress to this
+@param uint8_t scl: scl pin 
+@param uint8_t sda: sda pin 
+@param uint8_t slaveaddress: slave's address
+@param uint32_t clock: frequency on I2C bus (default: 400000)
+*/
+void DMXWire::beginMaster(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock = 400000){
    sync_dmx = xSemaphoreCreateMutex(); //create semaphore
    sync_config = xSemaphoreCreateMutex(); //create semaphore
    Wire.setTimeOut(100);
@@ -9,11 +17,25 @@ void DMXWire::beginMaster(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_
 	DMXWire::slaveAddress = slaveaddress;
 }
 
+
+/*
+(Master) starts RX task for requesting DMX data from slave
+@param none: requests whole universe from slave
+*beginMaster() has to be executed before!
+*/
 void DMXWire::startMaster_rx(){  //get whole universe
    request.getWholeUniverse = true;
    // xTaskCreatePinnedToCore(DMXWire::masterRx_task, "master_rx_task", 1024, NULL, 1, NULL, NRF24_CORE);
 }
 
+
+/*
+(Master) starts RX task for requesting DMX data from slave
+
+*beginMaster() has to be executed before!:
+@param uint16_t startChannel: start channel to request from slave
+@param uint16_t noChannels: number of channels to request from slave
+*/
 void DMXWire::startMaster_rx(uint16_t startChannel, uint16_t noChannels){  //only get some channels
    request.getWholeUniverse = false;
    request.requestChannel = startChannel;
@@ -22,11 +44,22 @@ void DMXWire::startMaster_rx(uint16_t startChannel, uint16_t noChannels){  //onl
    xTaskCreatePinnedToCore(DMXWire::masterRx_task, "master_rx_task", 2048, NULL, 1, NULL, NRF24_CORE);
 }
 
+
+/*
+(Master) Stops RX task for requestin DMX data from Slave
+*/
 void DMXWire::stopMaster_rx(){
    // deleteTask
 }
 
 
+/*
+(Master) Callback function to send dmx data to slave every x ms.
+function is called from main function with timer object
+
+used config variables:
+ledTxMode
+*/
 void DMXWire::masterTXcallback(){
 	if(config.ledTxMode == DMXWIRE_LED_WIRE) digitalWrite(config.ledTxpin, HIGH);
 
@@ -44,6 +77,14 @@ void DMXWire::masterTXcallback(){
 	if(config.ledTxMode == DMXWIRE_LED_WIRE) digitalWrite(config.ledTxpin, LOW);
 }
 
+
+/*
+(Master) Task for continous requesting DMX data from slave every x ms.
+
+used config variables:
+timeout_wire_ms
+rxFramerate_ms
+*/
 void DMXWire::masterRx_task(void*pvParameters){
    dmxwire_request_t _request = Dmxwire.request;
    uint16_t i = 0;
@@ -52,6 +93,8 @@ void DMXWire::masterRx_task(void*pvParameters){
    unsigned long _timeout = config.timeout_wire_ms;
    uint16_t _framerate_ms = config.rxFramerate_ms;
    int _slaveAddress = 8;
+   int _ledTxpin = config.ledTxpin;
+   int _ledTxMode = config.ledTxMode;
    xSemaphoreGive(sync_config);
 
    for(;;){
@@ -64,6 +107,7 @@ void DMXWire::masterRx_task(void*pvParameters){
 
          if( millis() > _request.timer + _framerate_ms){
             _request.timer = millis();
+            if(_ledTxMode == DMXWIRE_LED_WIRE) digitalWrite(_ledTxpin, HIGH);
 
             Dmxwire.requestDmx(_request.requestChannel + i);
             uint8_t bytesReceived = Wire.requestFrom(_slaveAddress, 3);  //wait for a 3 bytes message
@@ -87,25 +131,28 @@ void DMXWire::masterRx_task(void*pvParameters){
          }
       
       }
-      delay(2);
+      delay(20);
+
+      
    }
 
 }
 
-void DMXWire::master_dmx512rx_task(void*pvParameters){
-   // const uint16_t dmxFromChannel 
-   // const uint16_t numberOfChannel 
-   
-   // for(;;){
 
+/*
 
-   // }
-}
+(Master) Sends a DMX-channel request to slave and updates timestamp_wire.
+3 bytes in total:
 
+@params uint16_t asdaw
+
+[0] = DMXWIRE_PACKET_DMXREQUEST (ID for dmx channel request)
+[1] = channel lowbyte
+[2] = chanel highbyte
+*/
 void DMXWire::requestDmx(uint16_t channel){
-   uint8_t _packet[4];
+   uint8_t _packet[3];
    _packet[0]  = DMXWIRE_PACKET_DMXREQUEST;  //header 0: dmx request
-
    _packet[1] = (uint8_t) (channel >> 8);
    _packet[2] = (uint8_t) channel;
    Serial.printf("request ch:%u\n", channel);
@@ -115,12 +162,12 @@ void DMXWire::requestDmx(uint16_t channel){
    timestamp_wire = millis();
 }
 
-void DMXWire::setPacket(){	//master TX
-	Wire.beginTransmission(slaveAddress); // transmit to device #xy
-	Wire.write(packetNo);              // sends one byte
-	Wire.endTransmission();    // stop transmitting
-}
 
+/*
+(Master) sends a DMX-Packet to slave.
+
+variable packetNo has to be set before
+*/
 void DMXWire::sendPacketToSlave(){	//master TX
    xSemaphoreTake(sync_dmx, portMAX_DELAY);  
 	packetBusy = packetNo;
