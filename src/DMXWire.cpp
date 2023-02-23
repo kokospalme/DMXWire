@@ -3,6 +3,8 @@
  *
  *  Created on: 23 Dec 2022
  *      Author: Chris
+ * 
+ * ToDo: xTaskHandler on tasks + task delete von Außen, nicht von innen!
  */
 
 #include "DMXWire.h"
@@ -73,6 +75,21 @@ void DMXWire::setIomode(uint8_t mode){
    }
 }
 
+void DMXWire::beginStandalone(){
+   sync_dmx = xSemaphoreCreateMutex(); //create semaphore
+   sync_config = xSemaphoreCreateMutex(); //create semaphore
+   Serial.println("read config from preferences:");
+   radio = new RF24(NRF24_CE_PIN, NRF24_CSN_PIN);  //init radio
+   Dmxwire.preferencesInit();
+   Dmxwire.readConfig();
+
+   config.nrf_RXTXaddress = 0xF0F0F0F0F0LL;
+   config.ledRxpin = LEDRX_PIN;  //overwrite pins
+   config.ledTxpin = LEDTX_PIN;
+
+   switchIomode();
+
+}
 
 void DMXWire::beginSlaveRX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
    Serial.println("begin Slave RX");
@@ -258,7 +275,9 @@ void DMXWire::nrf24tx_task(void*pvParameters) { //transmit via NRF24
       uint8_t _iomode = config.ioMode;
       xSemaphoreGive(sync_config);
       if(_iomode != DMXBOARD_MODE_TX_NRF24){ //if ioMode is not longer TX NRF24, delete task
-      Serial.println("delete NRF24 TX task");
+         Serial.println("delete NRF24 TX task");
+         digitalWrite(config.ledTxpin, LOW);
+         switchIomode();
          vTaskDelete(NULL);
       }
       delay(3);
@@ -310,6 +329,7 @@ void DMXWire::nrf24rx_task(void*pvParameters){
          if(config.ledRxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledRxpin, LOW);
          Serial.println("delete NRF24 RX Task");
          digitalWrite(config.ledRxpin, LOW);
+         switchIomode();
          vTaskDelete(NULL);
       }
       if(millis() > timestamp_nrf24 + _timestamp){ //LED handling
@@ -368,8 +388,10 @@ void DMXWire::nrf24rx_toDmx512(void*pvParameters){
 
       if(_iomode != DMXBOARD_MODE_NRF24TODMX512){ //if ioMode is not longer NRF24 to dmx512, delete task
          Serial.println("delete NRF24 to dmx512 Task");
+         radio->stopListening();
          digitalWrite(config.ledRxpin, LOW);
          digitalWrite(config.ledTxpin, LOW);
+         switchIomode();
          vTaskDelete(NULL);
       }
       if(millis() > timestamp_nrf24 + _timestamp){ //LED handling
@@ -572,6 +594,64 @@ void DMXWire::writeConfig(){
    xSemaphoreGive(sync_config);
 
    // Dmxwire.readConfig();
-   ESP.restart();
+   // ESP.restart(); //ToDo: restart nötig oder nicht?!
    
+}
+
+void DMXWire::switchIomode(){
+
+#define IOMODESWITCH_DELAY 200
+
+   switch(config.ioMode){
+      case DMXBOARD_MODE_OFF:
+      return;
+      break;
+      case DMXBOARD_MODE_TX_DMX512:
+         delay(IOMODESWITCH_DELAY);
+         Dmxwire.setLedTx(DMXWIRE_LED_DMX512);
+         Dmxwire.setLedRx(DMXWIRE_LED_WIRE);
+         DMX::Initialize(output);
+         Serial.println("TX dmx512 initialized");
+      break;
+      case DMXBOARD_MODE_TX_NRF24:
+         delay(IOMODESWITCH_DELAY);
+         setLedTx(DMXWIRE_LED_NRF24);
+         setLedRx(DMXWIRE_LED_WIRE);
+         Serial.println("init MODE_TX_NRF24");
+         DMX::Initialize(input);
+         xTaskCreatePinnedToCore(DMXWire::nrf24tx_task, "nrf24_tx_task", 1024, NULL, 1, NULL, NRF24_CORE);
+      break;
+      case DMXBOARD_MODE_RX_DMX512:
+         delay(IOMODESWITCH_DELAY);
+         setLedTx(DMXWIRE_LED_WIRE);
+         setLedRx(DMXWIRE_LED_DMX512);
+         Serial.println("init MODE_RX_DMX512");
+         DMX::Initialize(input);
+         xTaskCreatePinnedToCore(DMXWire::slave_dmx512rx_task, "nrf24_tx_task", 1024, NULL, 1, NULL, DMX512_CORE);
+      break;
+      case DMXBOARD_MODE_RX_NRF24:
+         delay(IOMODESWITCH_DELAY);
+         setLedTx(DMXWIRE_LED_WIRE);
+         setLedRx(DMXWIRE_LED_NRF24);
+         Serial.println("init MODE_RX_NRF24");
+         xTaskCreatePinnedToCore(DMXWire::nrf24rx_task, "nrf24rx_task", 1024, NULL, 1, NULL, NRF24_CORE);
+      break;
+      case DMXBOARD_MODE_DMX512TONRF24:
+         delay(IOMODESWITCH_DELAY);
+         setLedTx(DMXWIRE_LED_NRF24);
+         setLedRx(DMXWIRE_LED_DMX512);
+         Serial.println("init DMX512TONRF24");
+         DMX::Initialize(input);
+         // xTaskCreatePinnedToCore(DMXWire::nrf24tx_task, "nrf24_tx_task", 1024, NULL, 1, NULL, NRF24_CORE);
+      break;
+      case DMXBOARD_MODE_NRF24TODMX512:
+         delay(IOMODESWITCH_DELAY);
+         setLedTx(DMXWIRE_LED_DMX512);
+         setLedRx(DMXWIRE_LED_NRF24);
+         Serial.println("init NRF24TODMX512");
+         DMX::Initialize(output);
+         // xTaskCreatePinnedToCore(DMXWire::nrf24rx_toDmx512, "nrf24_rx_task", 2048, NULL, 1, NULL, NRF24_CORE);
+      break;
+      default:break;
+   }
 }

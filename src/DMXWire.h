@@ -120,12 +120,13 @@ public:
 	static void setLedTx(uint8_t mode);	//set mode for led1
    static void setIomode(uint8_t mode);
 
+   static void beginStandalone();   //initialize Library as standalone device (Wire is not initialized)
 	static void beginMaster(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
    static void startMaster_rx();
    static void startMaster_rx(uint16_t startChannel, uint16_t noChannels);
    static void stopMaster_rx();
-
 	static void beginSlaveRX(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
+   static void switchIomode();   //starts 
 
 	static void write(uint16_t channel, uint8_t value);
 	static uint8_t read(uint16_t channel);

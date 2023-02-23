@@ -247,71 +247,71 @@ void DMXWire::dmxboardInit(){
    config.ledTxpin = LEDTX_PIN;
 
 
-   	switch(config.ioMode){	//input/output mode
-         case DMXBOARD_MODE_OFF:	//mode off [Wire slave, no output]
-            Serial.println("init MODE_OFF");
-            Dmxwire.beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-            Dmxwire.setLedTx(DMXWIRE_LED_OFF);
-            Dmxwire.setLedRx(DMXWIRE_LED_WIRE);
-            
-         break;
+   switch(config.ioMode){	//input/output mode 
+      case DMXBOARD_MODE_OFF:	//mode off [Wire slave, no output]
+         Serial.println("init MODE_OFF");
+         Dmxwire.beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+         Dmxwire.setLedTx(DMXWIRE_LED_OFF);
+         Dmxwire.setLedRx(DMXWIRE_LED_WIRE);
+         
+      break;
 
-         case DMXBOARD_MODE_TX_DMX512:	//mode tx dmx512 [Wire slave, DMX TX]
-            Serial.println("init MODE_TX_DMX512");
-            DMX::Initialize(output);
-            Dmxwire.beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-            Dmxwire.setLedTx(DMXWIRE_LED_DMX512);
-            Dmxwire.setLedRx(DMXWIRE_LED_WIRE);
-            
-         break;
+      case DMXBOARD_MODE_TX_DMX512:	//mode tx dmx512 [Wire slave, DMX TX]
+         Serial.println("init MODE_TX_DMX512");
+         DMX::Initialize(output);
+         Dmxwire.beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+         Dmxwire.setLedTx(DMXWIRE_LED_DMX512);
+         Dmxwire.setLedRx(DMXWIRE_LED_WIRE);
+         
+      break;
 
-         case DMXBOARD_MODE_TX_NRF24:	//mode tx nrf24 [Wire slave, NRF24 TX]
-            Serial.println("init MODE_TX_NRF24");
-            DMX::Initialize(input);
-            beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-            setLedTx(DMXWIRE_LED_NRF24);
-            setLedRx(DMXWIRE_LED_WIRE);
-            xTaskCreatePinnedToCore(DMXWire::nrf24tx_task, "nrf24_tx_task", 1024, NULL, 1, NULL, NRF24_CORE);
-         break;
+      case DMXBOARD_MODE_TX_NRF24:	//mode tx nrf24 [Wire slave, NRF24 TX]
+         beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+         Serial.println("init MODE_TX_NRF24");
+         DMX::Initialize(input);
+         setLedTx(DMXWIRE_LED_NRF24);
+         setLedRx(DMXWIRE_LED_WIRE);
+         xTaskCreatePinnedToCore(DMXWire::nrf24tx_task, "nrf24_tx_task", 1024, NULL, 1, NULL, NRF24_CORE);
+      break;
 
-         case DMXBOARD_MODE_RX_DMX512:	//mode rx dmx512 [Wire slave, DMX RX]
-            beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-            setLedTx(DMXWIRE_LED_WIRE);
-            setLedRx(DMXWIRE_LED_DMX512);
-            Serial.println("init MODE_RX_DMX512");
-            DMX::Initialize(input);
-            xTaskCreatePinnedToCore(DMXWire::slave_dmx512rx_task, "nrf24_tx_task", 1024, NULL, 1, NULL, DMX512_CORE);
-         break;
+      case DMXBOARD_MODE_RX_DMX512:	//mode rx dmx512 [Wire slave, DMX RX]
+         beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+         setLedTx(DMXWIRE_LED_WIRE);
+         setLedRx(DMXWIRE_LED_DMX512);
+         Serial.println("init MODE_RX_DMX512");
+         DMX::Initialize(input);
+         xTaskCreatePinnedToCore(DMXWire::slave_dmx512rx_task, "nrf24_tx_task", 1024, NULL, 1, NULL, DMX512_CORE);
+      break;
 
-         case DMXBOARD_MODE_RX_NRF24:	//mode rx dmx512 [Wire slave, DMX RX]
-            beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-            xTaskCreatePinnedToCore(DMXWire::nrf24rx_task, "nrf24rx_task", 1024, NULL, 1, NULL, NRF24_CORE);
-            setLedTx(DMXWIRE_LED_WIRE);
-            setLedRx(DMXWIRE_LED_NRF24);
-            Serial.println("init MODE_RX_NRF24");
-         break;
+      case DMXBOARD_MODE_RX_NRF24:	//mode rx dmx512 [Wire slave, DMX RX]
+         beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+         setLedTx(DMXWIRE_LED_WIRE);
+         setLedRx(DMXWIRE_LED_NRF24);
+         Serial.println("init MODE_RX_NRF24");
+         xTaskCreatePinnedToCore(DMXWire::nrf24rx_task, "nrf24rx_task", 1024, NULL, 1, NULL, NRF24_CORE);
+      break;
 
-         case DMXBOARD_MODE_DMX512TONRF24:   //ToDo: implement
-            beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-            setLedTx(DMXWIRE_LED_NRF24);
-            setLedRx(DMXWIRE_LED_DMX512);
-            DMX::Initialize(input);
-            Serial.println("init DMX512TONRF24");
-         break;
+      case DMXBOARD_MODE_DMX512TONRF24:   //ToDo: implement
+         beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+         setLedTx(DMXWIRE_LED_NRF24);
+         setLedRx(DMXWIRE_LED_DMX512);
+         Serial.println("init DMX512TONRF24");
+         DMX::Initialize(input);
+      break;
 
-         case DMXBOARD_MODE_NRF24TODMX512:
-            beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
-            setLedTx(DMXWIRE_LED_DMX512);
-            setLedRx(DMXWIRE_LED_NRF24);
-            DMX::Initialize(output);
-            xTaskCreatePinnedToCore(DMXWire::nrf24rx_toDmx512, "nrf24_rx_task", 2048, NULL, 1, NULL, NRF24_CORE);
-            Serial.println("init NRF24TODMX512");
-         break;
+      case DMXBOARD_MODE_NRF24TODMX512:
+         beginSlaveRX(SCL_PIN, SDA_PIN, DMXWIRE_SLAVEADDRESS, I2C_CLOCK);
+         setLedTx(DMXWIRE_LED_DMX512);
+         setLedRx(DMXWIRE_LED_NRF24);
+         Serial.println("init NRF24TODMX512");
+         DMX::Initialize(output);
+         xTaskCreatePinnedToCore(DMXWire::nrf24rx_toDmx512, "nrf24_rx_task", 2048, NULL, 1, NULL, NRF24_CORE);
+      break;
 
-         default:	//default [Wire slave, no output]
-            setLedTx(DMXWIRE_LED_OFF);
-            setLedRx(DMXWIRE_LED_WIRE);
-         break;
+      default:	//default [Wire slave, no output]
+         setLedTx(DMXWIRE_LED_OFF);
+         setLedRx(DMXWIRE_LED_WIRE);
+      break;
 	}
 }
 
