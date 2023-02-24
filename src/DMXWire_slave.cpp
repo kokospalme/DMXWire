@@ -297,6 +297,8 @@ void DMXWire::dmxboardInit(){
          setLedRx(DMXWIRE_LED_DMX512);
          Serial.println("init DMX512TONRF24");
          DMX::Initialize(input);
+         xTaskCreatePinnedToCore(DMXWire::slave_dmx512rx_task, "slave_dmx512rx_task", 1024, NULL, 1, &DMXWire::xSlave_dmx512rx_taskhandler, DMX512_CORE);
+         xTaskCreatePinnedToCore(DMXWire::nrf24tx_task, "nrf24_tx_task", 1024, NULL, 1, &DMXWire::xNrf24tx_taskhandler, NRF24_CORE);
       break;
 
       case DMXBOARD_MODE_NRF24TODMX512:
@@ -305,7 +307,7 @@ void DMXWire::dmxboardInit(){
          setLedRx(DMXWIRE_LED_NRF24);
          Serial.println("init NRF24TODMX512");
          DMX::Initialize(output);
-         xTaskCreatePinnedToCore(DMXWire::nrf24rx_toDmx512, "nrf24_rx_task", 2048, NULL, 1, NULL, NRF24_CORE);
+         xTaskCreatePinnedToCore(DMXWire::nrf24rx_toDmx512_task, "nrf24rx_toDmx512_task", 2048, NULL, 1, &DMXWire::xNrf24rx_toDmx512_taskhandler, NRF24_CORE);
       break;
 
       default:	//default [Wire slave, no output]
@@ -317,6 +319,7 @@ void DMXWire::dmxboardInit(){
 
 void DMXWire::dmxboardRun(){
    bool _healthy = false;
+
    switch(config.ioMode){
       case DMXBOARD_MODE_OFF:
       break;
@@ -356,7 +359,20 @@ void DMXWire::dmxboardRun(){
          delay(100);
       break;
       case DMXBOARD_MODE_DMX512TONRF24:
-         // Serial.printf("DMX512TONRF24. ch1:%u\n",nrf24.shadow_DMX[1]);  //read from nrf24 buffer
+         
+         xSemaphoreTake(sync_dmx, portMAX_DELAY);
+         if(slave_status.dmx512_healthy == true)_healthy = true;
+         else _healthy = false;
+
+         slave_status.lastDmxPacket = DMX::getLastPacket();
+         xSemaphoreGive(sync_dmx);
+         
+         if(_healthy){
+            // Serial.printf("MODE_RX_DMX512. %u.%u.%u.%u.%u\n", Dmxwire.read(1),Dmxwire.read(2),Dmxwire.read(3),Dmxwire.read(4),Dmxwire.read(5));
+         }else{
+            // Serial.print("MODE_RX_DMX512. FAIL\n");
+         }
+
          delay(100);
       break;
       case DMXBOARD_MODE_NRF24TODMX512:

@@ -32,6 +32,8 @@
 // #define DMXWIRE_DEBUG_SLAVE_RX
 // #define DMXWIRE_DEBUG_SLAVE_TX
 
+#define DMX_MAX_RXTIME_TICKS 3
+#define DMX_MAX_TXTIME_TICKS 3
 #define DMXWIRE_INTERVAL_MS	30	// 20 ... 40ms = 50 ... 25 FPS
 
 #define DMXWIRE_CHANNEL_PER_PACKET 16
@@ -107,6 +109,7 @@ struct dmxwire_settings_t{
 struct dmxwire_status_t{
    bool dmx512_healthy = false;
    bool nrf24_healthy = false;
+   long lastDmxPacket = 0;
 };
 
 class DMXWire {
@@ -180,16 +183,26 @@ private:
 
    /* dedicated devices */
    static RF24 *radio;
+   static bool rf24Initialized;
    static nrf24Data_t nrf24;  //data for nrf24
 
    //master's tasks
    static void master_dmx512rx_task(void*pvParameters);
+   static TaskHandle_t xMaster_dmx512rx_taskhandler;
 
    //slave's tasks
    static void slave_dmx512rx_task(void*pvParameters);
    static void nrf24tx_task(void*pvParameters);   //transmit over nrf24 module
    static void nrf24rx_task(void*pvParameters);
-   static void nrf24rx_toDmx512(void*pvParameters);
+   static void nrf24rx_toDmx512_task(void*pvParameters);
+   static void dmx512_to_nrf24_task(void*pvParameters);
+   
+   static TaskHandle_t xSlave_dmx512rx_taskhandler;
+   static TaskHandle_t xNrf24tx_taskhandler;
+   static TaskHandle_t xNrf24rx_taskhandler;
+   static TaskHandle_t xNrf24rx_toDmx512_taskhandler;
+
+
    static dmxwire_status_t slave_status;
    
 
