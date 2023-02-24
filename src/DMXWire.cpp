@@ -29,7 +29,8 @@ bool DMXWire::rf24Initialized = false;
 TaskHandle_t DMXWire::xSlave_dmx512rx_taskhandler;
 TaskHandle_t DMXWire::xNrf24tx_taskhandler;
 TaskHandle_t DMXWire::xNrf24rx_taskhandler;
-TaskHandle_t DMXWire::xNrf24rx_toDmx512_taskhandler;
+TaskHandle_t DMXWire::xNrf24rx_to_dmx512_taskhandler;
+TaskHandle_t DMXWire::xDmx512_to_nrf24_taskhandler;
 
 DMXWire::DMXWire() {
 
@@ -727,10 +728,15 @@ void DMXWire::switchIomode(){
       Serial.println("delete xNrf24rx_task");
       delay(1000);
    }
-   if( xNrf24rx_toDmx512_taskhandler != NULL ){   //stop nrf24rx_toDmx512_task
+   if( xNrf24rx_to_dmx512_taskhandler != NULL ){   //stop nrf24rx_toDmx512_task
       radio->stopListening();
-      vTaskDelete( xNrf24rx_toDmx512_taskhandler );
+      vTaskDelete( xNrf24rx_to_dmx512_taskhandler );
       Serial.println("delete xNrf24rx_toDmx512_task");
+      delay(1000);
+   }
+   if( xDmx512_to_nrf24_taskhandler != NULL ){   //stop nrf24rx_toDmx512_task
+      vTaskDelete( xDmx512_to_nrf24_taskhandler );
+      Serial.println("delete dmx512_to_nrf24_task");
       delay(1000);
    }
 
@@ -768,17 +774,16 @@ void DMXWire::switchIomode(){
       case DMXBOARD_MODE_DMX512TONRF24:
          setLedTx(DMXWIRE_LED_NRF24);
          setLedRx(DMXWIRE_LED_DMX512);
-         Serial.println("init DMX512TONRF24. start slave_dmx512rx_task & nrf24tx_task");
+         Serial.println("init DMX512TONRF24. start dmx512_to_nrf24_task");
          DMX::Initialize(input);
-         xTaskCreatePinnedToCore(DMXWire::slave_dmx512rx_task, "slave_dmx512rx_task", 1024, NULL, 1, &DMXWire::xSlave_dmx512rx_taskhandler, DMX512_CORE);
-         xTaskCreatePinnedToCore(DMXWire::nrf24tx_task, "nrf24_tx_task", 1024, NULL, 1, &DMXWire::xNrf24tx_taskhandler, NRF24_CORE);
+         xTaskCreatePinnedToCore(DMXWire::dmx512_to_nrf24_task, "dmx512_to_nrf24_task", 1024, NULL, 1, &DMXWire::xDmx512_to_nrf24_taskhandler, DMX512_CORE);
       break;
       case DMXBOARD_MODE_NRF24TODMX512:
          setLedTx(DMXWIRE_LED_DMX512);
          setLedRx(DMXWIRE_LED_NRF24);
          Serial.println("init NRF24TODMX512. start nrf24rx_toDmx512_task");
          DMX::Initialize(output);
-         xTaskCreatePinnedToCore(DMXWire::nrf24rx_toDmx512_task, "nrf24rx_toDmx512_task", 2048, NULL, 1, &DMXWire::xNrf24rx_toDmx512_taskhandler, NRF24_CORE);
+         xTaskCreatePinnedToCore(DMXWire::nrf24rx_toDmx512_task, "nrf24rx_toDmx512_task", 2048, NULL, 1, &DMXWire::xNrf24rx_to_dmx512_taskhandler, NRF24_CORE);
       break;
       default:break;
    }

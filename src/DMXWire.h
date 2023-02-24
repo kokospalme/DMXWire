@@ -200,7 +200,8 @@ private:
    static TaskHandle_t xSlave_dmx512rx_taskhandler;
    static TaskHandle_t xNrf24tx_taskhandler;
    static TaskHandle_t xNrf24rx_taskhandler;
-   static TaskHandle_t xNrf24rx_toDmx512_taskhandler;
+   static TaskHandle_t xNrf24rx_to_dmx512_taskhandler;
+   static TaskHandle_t xDmx512_to_nrf24_taskhandler;
 
 
    static dmxwire_status_t slave_status;
