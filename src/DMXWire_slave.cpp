@@ -345,8 +345,10 @@ void DMXWire::dmxboardRun(){
          xSemaphoreGive(sync_dmx);
          
          if(_healthy){
+            digitalWrite(config.ledRxpin, HIGH);
             // Serial.printf("MODE_RX_DMX512. %u.%u.%u.%u.%u\n", Dmxwire.read(1),Dmxwire.read(2),Dmxwire.read(3),Dmxwire.read(4),Dmxwire.read(5));
          }else{
+            digitalWrite(config.ledRxpin, LOW);
             // Serial.print("MODE_RX_DMX512. FAIL\n");
          }
 
@@ -367,8 +369,10 @@ void DMXWire::dmxboardRun(){
          xSemaphoreGive(sync_dmx);
          
          if(_healthy){
+            digitalWrite(config.ledRxpin, HIGH);
             // Serial.printf("MODE_RX_DMX512. %u.%u.%u.%u.%u\n", Dmxwire.read(1),Dmxwire.read(2),Dmxwire.read(3),Dmxwire.read(4),Dmxwire.read(5));
          }else{
+            digitalWrite(config.ledRxpin, LOW);
             // Serial.print("MODE_RX_DMX512. FAIL\n");
          }
 
