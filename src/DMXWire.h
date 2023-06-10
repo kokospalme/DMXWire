@@ -27,6 +27,8 @@
 #include <nRF24L01.h> // library: https://github.com/maniacbug/RF24
 #include <RF24.h>
 
+
+#define RXTX_ADDRESS 0xF0F0F0F0F0LL
 #define DMXWIRE_DEBUG_DMXBOARD_RUN
 // #define DMXWIRE_DEBUG_SLAVE_WIRE
 // #define DMXWIRE_DEBUG_SLAVE_RX
@@ -122,7 +124,10 @@ public:
 	static void setLedTx(int pin, uint8_t mode);	//set pin and mode for led1
 	static void setLedTx(uint8_t mode);	//set mode for led1
    static void setIomode(uint8_t mode);
+   static void setRxtxpipe(uint64_t rxtxAddress);
 
+   static void initNRF24();   //initialize NRF24 and set to standby mode
+   static nrf24Data_t nrf24_scanChannels();
    static void beginStandalone();   //initialize Library as standalone device (Wire is not initialized)
 	static void beginMaster(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
    static void startMaster_rx();
@@ -130,6 +135,7 @@ public:
    static void stopMaster_rx();
 	static void beginSlaveRX(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
    static void switchIomode();   //starts 
+   static void nrf24_stop();  //stops tasks that uses NRF24
 
 	static void write(uint16_t channel, uint8_t value);
 	static uint8_t read(uint16_t channel);
@@ -184,6 +190,7 @@ private:
    /* dedicated devices */
    static RF24 *radio;
    static bool rf24Initialized;
+   static bool dmxInitialized;
    static nrf24Data_t nrf24;  //data for nrf24
 
    //master's tasks

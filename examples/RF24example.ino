@@ -10,6 +10,7 @@
  * This example was written to be used on 2 devices acting as "nodes".
  * Use the Serial Monitor to change each node's behavior.
  */
+
 #include <SPI.h>
 #include "printf.h"
 #include "RF24.h"

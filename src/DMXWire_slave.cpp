@@ -388,3 +388,43 @@ void DMXWire::dmxboardRun(){
    }
    Dmxwire.serialhandlerSlave();
 }
+
+
+nrf24Data_t DMXWire::nrf24_scanChannels(){
+
+   Dmxwire.nrf24_stop();   //stop tasks
+
+   memset(nrf24.rf24Noise,0,sizeof(nrf24.rf24Noise));
+
+     // Scan all channels num_reps times
+  int rep_counter = NRF24_SCAN_REPS;
+
+
+  for(int i = 0; i < NRF24_SCAN_REPS; i++){
+
+      for(int j = 0; j < NRF24_MAX_RF_CHANNELS; j++){
+
+         // Select this channel
+         radio->setChannel(j);
+
+         // Listen for a little
+         radio->startListening();
+         delayMicroseconds(128);
+         radio->stopListening();
+
+         // Did we get a carrier?
+         if ( radio->testCarrier() )
+         ++nrf24.rf24Noise[j];
+      }
+
+   }
+
+   for(int i = 0; i < NRF24_MAX_RF_CHANNELS; i++){
+      Serial.printf("%i ", nrf24.rf24Noise[i]);
+   }
+   Serial.println("");
+
+
+   Dmxwire.switchIomode(); //resume tasks...
+   return nrf24;
+}

@@ -28,6 +28,8 @@
 #define SDA_PIN 4
 
 /* NRF24 stuff*/
+#define NRF24_MAX_RF_CHANNELS 128
+#define NRF24_SCAN_REPS 20
 #define NRF24_MAX_DMX_CHANNELS 512 // full DMX
 #define NRF24_BYTES_PER_PACKET 16 // usable bytes per packet
 #define NRF24_PACKET_OVERHEAD 2 // group and time stamp
@@ -43,6 +45,7 @@
 
 struct nrf24Data_t{
    bool radioOK = false;
+   uint8_t rf24Noise[NRF24_MAX_RF_CHANNELS];
    unsigned long refreshTimer = 0;
    unsigned long flashTimer = 0;
    uint8_t payload[NRF24_MAXPAYLOAD];
