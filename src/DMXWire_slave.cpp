@@ -238,7 +238,7 @@ void DMXWire::dmxboardInit(){
    sync_dmx = xSemaphoreCreateMutex(); //create semaphore
    sync_config = xSemaphoreCreateMutex(); //create semaphore
    Serial.println("read config from preferences:");
-   radio = new RF24(NRF24_CE_PIN, NRF24_CSN_PIN);  //init radio
+   radio = new RF24(hardwareCfg.nrf_ce, hardwareCfg.nrf_cs);  //init radio
    Dmxwire.preferencesInit();
    Dmxwire.readConfig();
 

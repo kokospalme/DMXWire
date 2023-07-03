@@ -95,7 +95,7 @@ struct dmxwire_request_t{
 
 struct dmxwire_settings_t{
    uint8_t ioMode = DMXBOARD_MODE_TX_DMX512; //default iomode: TX over DMX512 (Serial)
-	int ledRxpin = LED_BUILTIN;	//built in LED
+	int ledRxpin = -1;	//built in LED
 	int ledTxpin = -1;	//off
 	uint16_t txFramerate_ms = DMXBOARD_TX_FOLLOW; //transmit only when master is sending something
    uint16_t rxFramerate_ms = 30; //request DMX every __ ms
@@ -106,6 +106,14 @@ struct dmxwire_settings_t{
 	unsigned long timeout_wire_ms = 100;	//timeouts
 	unsigned long timeout_dmx512_ms = 500;
 	unsigned long timeout_nrf24_ms = 500;
+};
+
+struct dmxwire_hardware_t{
+   int spi_miso = MISO;
+   int spi_mosi = MOSI;
+   int spi_sck = SCK;
+   int nrf_cs = NRF24_CSN_PIN_DEFAULT;
+   int nrf_ce = NRF24_CE_PIN_DEFAULT;
 };
 
 struct dmxwire_status_t{
@@ -128,6 +136,7 @@ public:
 
    static void initNRF24();   //initialize NRF24 and set to standby mode
    static nrf24Data_t nrf24_scanChannels();
+   static void setHardware(dmxwire_hardware_t hardware);
    static void beginStandalone();   //initialize Library as standalone device (Wire is not initialized)
 	static void beginMaster(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
    static void startMaster_rx();
@@ -167,6 +176,8 @@ public:
    static uint8_t readSetting_NRF24noise(uint8_t channel);
    static void writeSetting_NRF24channel(int channel);   // 0...255, -1: automatic
    static int readSetting_NRF24channel();
+   void setConfig(dmxwire_settings_t cfg);
+   dmxwire_settings_t getConfig();
 
 
    /** IR stuff **/
@@ -221,6 +232,7 @@ private:
    static unsigned long timestamp_nrf24;
 
    // config stuff 
+   static dmxwire_hardware_t hardwareCfg;
 	static dmxwire_settings_t config;
    static Preferences *preferences;
    static void preferencesInit();

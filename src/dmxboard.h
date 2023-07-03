@@ -39,8 +39,8 @@
 #define SPI_CLK_PIN 6   //SPI settings
 #define SPI_MISO_PIN 2
 #define SPI_MOSI_PIN 7
-#define NRF24_CE_PIN 3 // Chip enable
-#define NRF24_CSN_PIN 10 // Chip select not
+#define NRF24_CE_PIN_DEFAULT 3 // Chip enable
+#define NRF24_CSN_PIN_DEFAULT 10 // Chip select not
 
 
 struct nrf24Data_t{

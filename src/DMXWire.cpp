@@ -17,6 +17,7 @@ unsigned long DMXWire::duration_wire = 0;
 unsigned long DMXWire::timestamp_wire = 0;
 unsigned long DMXWire::timestamp_dmx512 = 0;
 unsigned long DMXWire::timestamp_nrf24 = 0;
+dmxwire_hardware_t DMXWire::hardwareCfg;
 dmxwire_settings_t DMXWire::config;
 SemaphoreHandle_t DMXWire::sync_dmx;
 SemaphoreHandle_t DMXWire::sync_config;
@@ -119,6 +120,33 @@ void DMXWire::setRxtxpipe(uint64_t rxtxAddress){
    
 }
 
+
+/*
+
+*/
+void DMXWire::setHardware(dmxwire_hardware_t hardware){
+   hardwareCfg = hardware;
+}
+
+
+/*
+set dmxwire config
+*/
+void DMXWire::setConfig(dmxwire_settings_t cfg){
+   xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+   config = cfg;
+   xSemaphoreGive(sync_config);
+}
+dmxwire_settings_t DMXWire::getConfig(){
+
+   dmxwire_settings_t _cfg;
+   xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+   _cfg = config;
+   xSemaphoreGive(sync_config);
+   return _cfg;
+}
+
+
 /*
 Begin as Standalone-device without I2C connection
 - switchIomode() has to be executed manually afterwards
@@ -128,7 +156,7 @@ void DMXWire::beginStandalone(){
    sync_dmx = xSemaphoreCreateMutex(); //create semaphore
    sync_config = xSemaphoreCreateMutex(); //create semaphore
    Serial.println("read config from preferences:");
-   radio = new RF24(NRF24_CE_PIN, NRF24_CSN_PIN);  //init radio
+   radio = new RF24(hardwareCfg.nrf_ce, hardwareCfg.nrf_cs);  //init radio
    Dmxwire.preferencesInit();
    Dmxwire.readConfig();
 
@@ -449,7 +477,7 @@ void DMXWire::readConfig(){
 
    config.ioMode = preferences->getUChar("ioMode", DMXBOARD_MODE_TX_DMX512);
    config.ledRxMode = preferences->getUChar("ledRxMode", DMXWIRE_LED_WIRE);
-   config.ledRxpin = preferences->getInt("ledRxPin", LED_BUILTIN);
+   config.ledRxpin = preferences->getInt("ledRxPin", -1);
    config.ledTxMode = preferences->getUChar("ledTxMode",DMXWIRE_LED_DMX512);
    config.ledTxpin = preferences->getInt("ledTxPin", -1);
    config.nrf_RXTXaddress = preferences->getULong64("nrf_RXTXaddress",0xF0F0F0F0F0LL );
