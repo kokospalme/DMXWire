@@ -36,9 +36,6 @@
 #define NRF24_MAXPAYLOAD (NRF24_BYTES_PER_PACKET + NRF24_PACKET_OVERHEAD) // max payload size for nrf24l01
 #define NRF24_MAXGROUPS (NRF24_MAX_DMX_CHANNELS / NRF24_BYTES_PER_PACKET) // 32 groups of 16 channels = 512 DMX channels
 
-#define SPI_CLK_PIN 6   //SPI settings
-#define SPI_MISO_PIN 2
-#define SPI_MOSI_PIN 7
 #define NRF24_CE_PIN_DEFAULT 3 // Chip enable
 #define NRF24_CSN_PIN_DEFAULT 10 // Chip select not
 

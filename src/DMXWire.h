@@ -176,7 +176,7 @@ public:
    static uint8_t readSetting_NRF24noise(uint8_t channel);
    static void writeSetting_NRF24channel(int channel);   // 0...255, -1: automatic
    static int readSetting_NRF24channel();
-   void setConfig(dmxwire_settings_t cfg);
+   static void setConfig(dmxwire_settings_t cfg);
    dmxwire_settings_t getConfig();
 
 

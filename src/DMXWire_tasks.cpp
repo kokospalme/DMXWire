@@ -52,15 +52,20 @@ void DMXWire::nrf24tx_task(void*pvParameters) { //transmit via NRF24
 
    radio->openWritingPipe(config.nrf_RXTXaddress); // set network address
 
+   unsigned long _timer = millis(); //timestamp
+
+   xSemaphoreTake(sync_config, portMAX_DELAY);
+   uint8_t _framerate  = config.txFramerate_ms;
+   xSemaphoreGive(sync_config);
 
    for(;;){
-      long _stamp = xTaskGetTickCount();
-      xSemaphoreTake(sync_dmx, portMAX_DELAY);
-      // long _lastDmx  = slave_status.lastDmxPacket;
-      long _lastDmx = DMX::getLastPacket();
-      xSemaphoreGive(sync_dmx);
 
-      if( _stamp >= _lastDmx && _stamp <= _lastDmx + DMX_MAX_TXTIME_TICKS){
+
+      if(millis() >= _timer + _framerate){
+         unsigned long _time = millis() - _timer;
+         _timer = millis();
+         // Serial.println(DMX::Read(1));
+
          if(nrf24.radioOK == false) return;  //return if nrf24 is not initialized
 
          for (uint8_t group = 0; group < NRF24_MAXGROUPS; group++) { // send groups of DMX data, 16 bytes at a time
@@ -82,7 +87,7 @@ void DMXWire::nrf24tx_task(void*pvParameters) { //transmit via NRF24
             
 
             if (nrf24.group_send) { // only send the data that has changed, any data change in a group will result in whole group send
-            if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, HIGH);   //LED high
+            if(config.ledTxMode == DMXWIRE_LED_NRF24 && config.ledTxpin >=0) digitalWrite(config.ledTxpin, HIGH);   //LED high
                timestamp_nrf24 = millis(); // reset timestamp
                nrf24.payload[0] = group; // set first byte to point to group number (groups of 16 bytes)
                nrf24.payload[1] = nrf24.timeStamp++; // second byte helps us monitor consistency of reception at receiver with a continuous frame counter
@@ -90,18 +95,18 @@ void DMXWire::nrf24tx_task(void*pvParameters) { //transmit via NRF24
                radio->write( nrf24.payload, sizeof(nrf24.payload) ); // dump payload to radio
             } 
          } 
-         if(config.ledTxMode == DMXWIRE_LED_NRF24) digitalWrite(config.ledTxpin, LOW);
+         if(config.ledTxMode == DMXWIRE_LED_NRF24 && config.ledTxpin >=0) digitalWrite(config.ledTxpin, LOW);
 
          xSemaphoreTake(sync_config, portMAX_DELAY);
          uint8_t _iomode = config.ioMode;
          xSemaphoreGive(sync_config);
          if(_iomode != DMXBOARD_MODE_TX_NRF24){ //if ioMode is not longer TX NRF24, delete task
-            digitalWrite(config.ledTxpin, LOW);
+            if(config.ledTxpin >=0)digitalWrite(config.ledTxpin, LOW);
          }
          
       }
 
-      delay(1);   //threadsafety
+      delay(2);   //threadsafety
    }
 } 
 

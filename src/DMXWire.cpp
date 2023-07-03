@@ -137,6 +137,7 @@ void DMXWire::setConfig(dmxwire_settings_t cfg){
    config = cfg;
    xSemaphoreGive(sync_config);
 }
+
 dmxwire_settings_t DMXWire::getConfig(){
 
    dmxwire_settings_t _cfg;
@@ -161,10 +162,10 @@ void DMXWire::beginStandalone(){
    Dmxwire.readConfig();
 
    // config.nrf_RXTXaddress = RXTX_ADDRESS;
-   config.ledRxpin = LEDRX_PIN;  //overwrite pins
-   config.ledTxpin = LEDTX_PIN;
-   pinMode(config.ledRxpin, OUTPUT);
-   pinMode(config.ledTxpin, OUTPUT);
+   // config.ledRxpin = LEDRX_PIN;  //overwrite pins
+   // config.ledTxpin = LEDTX_PIN;
+   if(config.ledRxpin > -1)pinMode(config.ledRxpin, OUTPUT);
+   if(config.ledRxpin > -1)pinMode(config.ledTxpin, OUTPUT);
 
    Dmxwire.initNRF24();
 
@@ -533,8 +534,8 @@ void DMXWire::writeConfig(){
 Switch to another IOmode (delete old task, start one)
 */
 void DMXWire::switchIomode(){
-   digitalWrite(config.ledRxpin, LOW);
-   digitalWrite(config.ledTxpin, LOW);
+   if(config.ledRxpin >=0) digitalWrite(config.ledRxpin, LOW);
+   if(config.ledTxpin >=0) digitalWrite(config.ledTxpin, LOW);
 
 
    if( xSlave_dmx512rx_taskhandler != NULL ){   //stop slave_dmx512rx_task
@@ -587,9 +588,9 @@ void DMXWire::switchIomode(){
          setLedTx(DMXWIRE_LED_NRF24);
          setLedRx(DMXWIRE_LED_WIRE);
          Serial.println("init MODE_TX_NRF24. start nrf24tx_task");
-         if(dmxInitialized) DMX::changeDirection(input);
-         else DMX::Initialize(input);
-         dmxInitialized = true;
+         // if(dmxInitialized) DMX::changeDirection(input);
+         // else DMX::Initialize(input);
+         // dmxInitialized = true;
          xTaskCreatePinnedToCore(DMXWire::nrf24tx_task, "nrf24_tx_task", 1024, NULL, 1, &DMXWire::xNrf24tx_taskhandler, NRF24_CORE);
       break;
       case DMXBOARD_MODE_RX_DMX512:
