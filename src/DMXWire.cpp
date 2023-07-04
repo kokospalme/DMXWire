@@ -158,6 +158,7 @@ void DMXWire::beginStandalone(){
    sync_config = xSemaphoreCreateMutex(); //create semaphore
    Serial.println("read config from preferences:");
    radio = new RF24(hardwareCfg.nrf_ce, hardwareCfg.nrf_cs);  //init radio
+   radio->setPALevel(RF24_PA_MAX);
    Dmxwire.preferencesInit();
    Dmxwire.readConfig();
 
@@ -591,7 +592,7 @@ void DMXWire::switchIomode(){
          // if(dmxInitialized) DMX::changeDirection(input);
          // else DMX::Initialize(input);
          // dmxInitialized = true;
-         xTaskCreatePinnedToCore(DMXWire::nrf24tx_task, "nrf24_tx_task", 1024, NULL, 1, &DMXWire::xNrf24tx_taskhandler, NRF24_CORE);
+         xTaskCreatePinnedToCore(DMXWire::nrf24tx_task, "nrf24_tx_task", 1024, NULL, MODE_TX_NRF24_PRIO, &DMXWire::xNrf24tx_taskhandler, NRF24_CORE);
       break;
       case DMXBOARD_MODE_RX_DMX512:
          setLedTx(DMXWIRE_LED_WIRE);
@@ -603,23 +604,23 @@ void DMXWire::switchIomode(){
          xTaskCreatePinnedToCore(DMXWire::slave_dmx512rx_task, "slave_dmx512rx_task", 1024, NULL, 1, &DMXWire::xSlave_dmx512rx_taskhandler, DMX512_CORE);
       break;
       case DMXBOARD_MODE_RX_NRF24:
-         setLedTx(DMXWIRE_LED_WIRE);
-         setLedRx(DMXWIRE_LED_NRF24);
+         if(config.ledTxpin >= 0)setLedTx(DMXWIRE_LED_WIRE);
+         if(config.ledRxpin >= 0)setLedRx(DMXWIRE_LED_NRF24);
          Serial.println("init MODE_RX_NRF24. start nrf24rx_task");
-         xTaskCreatePinnedToCore(DMXWire::nrf24rx_task, "nrf24rx_task", 1024, NULL, 1, &DMXWire::xNrf24rx_taskhandler, NRF24_CORE);
+         xTaskCreatePinnedToCore(DMXWire::nrf24rx_task, "nrf24rx_task", 1024, NULL, MODE_RX_NRF24_PRIO, &DMXWire::xNrf24rx_taskhandler, NRF24_CORE);
       break;
       case DMXBOARD_MODE_DMX512TONRF24:
-         setLedTx(DMXWIRE_LED_NRF24);
-         setLedRx(DMXWIRE_LED_DMX512);
+         if(config.ledTxpin >= 0)setLedTx(DMXWIRE_LED_NRF24);
+         if(config.ledRxpin >= 0)setLedRx(DMXWIRE_LED_DMX512);
          Serial.println("init DMX512TONRF24. start dmx512_to_nrf24_task");
          if(dmxInitialized) DMX::changeDirection(input);
          else DMX::Initialize(input);
          dmxInitialized = true;
-         xTaskCreatePinnedToCore(DMXWire::dmx512_to_nrf24_task, "dmx512_to_nrf24_task", 1024, NULL, 1, &DMXWire::xDmx512_to_nrf24_taskhandler, DMX512_CORE);
+         xTaskCreatePinnedToCore(DMXWire::dmx512_to_nrf24_task, "dmx512_to_nrf24_task", MODE_DMX512TONRF24_STACKSIZE, NULL, DMX512TONRF24_PRIO, &DMXWire::xDmx512_to_nrf24_taskhandler, DMX512_CORE);
       break;
       case DMXBOARD_MODE_NRF24TODMX512:
-         setLedTx(DMXWIRE_LED_DMX512);
-         setLedRx(DMXWIRE_LED_NRF24);
+         if(config.ledTxpin >= 0)setLedTx(DMXWIRE_LED_DMX512);
+         if(config.ledRxpin >= 0)setLedRx(DMXWIRE_LED_NRF24);
          Serial.println("init NRF24TODMX512. start nrf24rx_toDmx512_task");
          if(dmxInitialized) DMX::changeDirection(output);
          else DMX::Initialize(output);

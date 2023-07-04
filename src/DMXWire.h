@@ -81,8 +81,23 @@
 #define SETTINGID_GET_NRF24_CHANNEL 34
 
 // multicore stuff
-#define DMX512_CORE 0
-#define NRF24_CORE 0
+   #define MODE_TX_NRF24_STACKSIZE 2048
+   #define MODE_DMX512TONRF24_STACKSIZE 2048
+#ifdef CONFIG_IDF_TARGET_ESP32  //ESP32
+   #define MODE_TX_NRF24_PRIO 3
+   #define MODE_RX_NRF24_PRIO 1
+   #define DMX512TONRF24_PRIO 2
+   #define RXDMX512
+   #define DMX512_CORE 1
+   #define NRF24_CORE 1
+#elif CONFIG_IDF_TARGET_ESP32C3
+   #define MODE_TX_NRF24_PRIO 2
+   #define MODE_RX_NRF24_PRIO 1
+   #define DMX512TONRF24_PRIO 2
+   #define RXDMX512
+   #define DMX512_CORE 0
+   #define NRF24_CORE 0
+#endif
 
 struct dmxwire_request_t{
    unsigned long timer = 0;
