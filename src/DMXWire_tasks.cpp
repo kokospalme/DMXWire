@@ -62,7 +62,7 @@ void DMXWire::nrf24tx_task(void*pvParameters) { //transmit via NRF24
 
       if(millis() >= _timer + _framerate){
          unsigned long _time = millis() - _timer;
-         Serial.printf("%u \n"_time);
+         Serial.printf("%u \n",_time);
          _timer = millis();
          
 
@@ -200,11 +200,6 @@ void DMXWire::dmx512_to_nrf24_task(void*pvParameters){
 
 
       if( _stamp >= _lastDmx && _stamp <= _lastDmx + DMX_MAX_TXTIME_TICKS){
-<<<<<<< HEAD
-         
-=======
-
->>>>>>> ee46b831c170de2f5287ae13729656c97c2cd825
          for(int i = 1; i <= 512 ;i++){   //write from DMX to Wire buffer
             // Dmxwire.write(i, _buffer[i-1]);
             Dmxwire.write(i, DMX::Read(i));
