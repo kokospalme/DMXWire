@@ -166,6 +166,7 @@ void DMXWire::nrf24rx_toDmx512_task(void*pvParameters){
             DMX::Write(NRF24_BYTES_PER_PACKET * nrf24.payload[0] + i ,nrf24.payload[i+2]);
          } 
          // Serial.println(NRF24_BYTES_PER_PACKET * nrf24.payload[0] ,nrf24.payload[2]);
+         delay(2);
          
       } 
 
@@ -199,7 +200,11 @@ void DMXWire::dmx512_to_nrf24_task(void*pvParameters){
 
 
       if( _stamp >= _lastDmx && _stamp <= _lastDmx + DMX_MAX_TXTIME_TICKS){
+<<<<<<< HEAD
          
+=======
+
+>>>>>>> ee46b831c170de2f5287ae13729656c97c2cd825
          for(int i = 1; i <= 512 ;i++){   //write from DMX to Wire buffer
             // Dmxwire.write(i, _buffer[i-1]);
             Dmxwire.write(i, DMX::Read(i));

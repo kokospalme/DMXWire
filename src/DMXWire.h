@@ -163,6 +163,7 @@ public:
 
 	static void write(uint16_t channel, uint8_t value);
 	static uint8_t read(uint16_t channel);
+   static void readAll(uint8_t *data); //read All DMX data
 	static unsigned long getDuration();	//get last duration in ms
    static void setTimout_wire(unsigned long timeout_ms);
    static void setTimout_dmx512(unsigned long timeout_ms);
