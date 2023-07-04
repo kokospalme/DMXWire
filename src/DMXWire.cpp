@@ -230,6 +230,12 @@ uint8_t DMXWire::read(uint16_t channel){
    
 }
 
+void DMXWire::readAll(uint8_t *data){
+   // xSemaphoreTake(sync_dmx, portMAX_DELAY);  //task safety
+   // memcpy(data, (uint8_t *)dmx_data, 512);
+   // xSemaphoreGive(sync_dmx);
+}
+
 /*
 Returns duration for getting all 512 bytes in ms
 */
