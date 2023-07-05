@@ -33,6 +33,7 @@ TaskHandle_t DMXWire::xNrf24tx_taskhandler;
 TaskHandle_t DMXWire::xNrf24rx_taskhandler;
 TaskHandle_t DMXWire::xNrf24rx_to_dmx512_taskhandler;
 TaskHandle_t DMXWire::xDmx512_to_nrf24_taskhandler;
+bool DMXWire::usePreferences = false;
 
 DMXWire::DMXWire() {
 
@@ -96,13 +97,14 @@ void DMXWire::setLedTx(uint8_t mode){	//set mode for ledRx
 set the IOmode and store it to preferences
 */
 void DMXWire::setIomode(uint8_t mode){
-   if(mode != config.ioMode){
-      config.ioMode = mode;
-   }
+
    Serial.printf("dmxwire iomode: %i\n", mode);
 
    xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
-   preferences->putUChar("ioMode", config.ioMode);
+   if(mode != config.ioMode){
+      config.ioMode = mode;
+   }
+   if(usePreferences)preferences->putUChar("ioMode", config.ioMode);
    xSemaphoreGive(sync_config);
 
    switchIomode();
@@ -115,7 +117,7 @@ void DMXWire::setRxtxpipe(uint64_t rxtxAddress){
 
    xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
    config.nrf_RXTXaddress = rxtxAddress;
-   preferences->putULong64("nrf_RXTXaddress", rxtxAddress);
+   if(usePreferences)preferences->putULong64("nrf_RXTXaddress", rxtxAddress);
    xSemaphoreGive(sync_config);
    
 }
@@ -152,15 +154,17 @@ dmxwire_settings_t DMXWire::getConfig(){
 Begin as Standalone-device without I2C connection
 - switchIomode() has to be executed manually afterwards
 */
-void DMXWire::beginStandalone(){
+void DMXWire::beginStandalone(bool usePreferences){
 
    sync_dmx = xSemaphoreCreateMutex(); //create semaphore
    sync_config = xSemaphoreCreateMutex(); //create semaphore
-   Serial.println("read config from preferences:");
+   DMXWire::usePreferences = usePreferences;
+   if(usePreferences) Serial.println("read config from preferences:");
    radio = new RF24(hardwareCfg.nrf_ce, hardwareCfg.nrf_cs);  //init radio
    radio->setPALevel(RF24_PA_MAX);
-   Dmxwire.preferencesInit();
-   Dmxwire.readConfig();
+   if(usePreferences) Dmxwire.preferencesInit();
+   if(usePreferences) Dmxwire.readConfig();
+
 
    // config.nrf_RXTXaddress = RXTX_ADDRESS;
    // config.ledRxpin = LEDRX_PIN;  //overwrite pins
@@ -201,6 +205,7 @@ void DMXWire::initNRF24(){
    Serial.println("NRF24 init OK.");
    nrf24.radioOK = true;
 
+
 }
 
 
@@ -209,6 +214,7 @@ Begin as Slave that receives data from Master
 */
 void DMXWire::beginSlaveRX(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock){
    Serial.println("begin Slave RX");
+   usePreferences = true;
 	Wire.begin(slaveaddress, sda, scl,clock);
 	Wire.onReceive(DMXWire::slaveRXcallback); // register event
 	DMXWire::slaveAddress = slaveaddress;
@@ -469,6 +475,7 @@ void DMXWire::serialhandlerMaster(){   //
 Initialize preferences object
 */
 void DMXWire::preferencesInit(){
+   if(!usePreferences)return;
    preferences = new Preferences();
    preferences->begin("dmxwire_config", false);
    Serial.println("preferences initialized");
@@ -480,9 +487,9 @@ void DMXWire::preferencesInit(){
 Read config from preferences and write it to config object
 */
 void DMXWire::readConfig(){
+   if(!usePreferences)return;
 
    xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
-
    config.ioMode = preferences->getUChar("ioMode", DMXBOARD_MODE_TX_DMX512);
    config.ledRxMode = preferences->getUChar("ledRxMode", DMXWIRE_LED_WIRE);
    config.ledRxpin = preferences->getInt("ledRxPin", -1);
@@ -514,8 +521,8 @@ void DMXWire::readConfig(){
 }
 
 void DMXWire::writeConfig(){
+   if(!usePreferences)return;
    Serial.println("write...");
-   
    xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
    Serial.printf("set ioMode:%u size of config: %u\n", config.ioMode, sizeof(config));
 

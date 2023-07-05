@@ -152,7 +152,7 @@ public:
    static void initNRF24();   //initialize NRF24 and set to standby mode
    static nrf24Data_t nrf24_scanChannels();
    static void setHardware(dmxwire_hardware_t hardware);
-   static void beginStandalone();   //initialize Library as standalone device (Wire is not initialized)
+   static void beginStandalone(bool usePreferences);   //initialize Library as standalone device (Wire is not initialized)
 	static void beginMaster(uint8_t scl, uint8_t sda, uint8_t slaveaddress, uint32_t clock);
    static void startMaster_rx();
    static void startMaster_rx(uint16_t startChannel, uint16_t noChannels);
@@ -254,6 +254,7 @@ private:
    static void preferencesInit();
    static void readConfig();
    static void writeConfig();
+   static bool usePreferences;
 
    //task safety
    static SemaphoreHandle_t sync_dmx;

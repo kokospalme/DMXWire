@@ -235,7 +235,7 @@ void DMXWire::dmx512_to_nrf24_task(void*pvParameters){
             } 
          } 
          if(config.ledTxMode == DMXWIRE_LED_NRF24) if(config.ledRxpin >= 0)digitalWrite(config.ledTxpin, LOW);
-         Serial.printf("%u %u\n",_lastDmx ,Dmxwire.read(1));
+         // Serial.printf("%u %u\n",_lastDmx ,Dmxwire.read(1));
 
          xSemaphoreTake(sync_config, portMAX_DELAY);
          uint8_t _iomode = config.ioMode;
