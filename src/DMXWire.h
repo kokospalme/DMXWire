@@ -183,17 +183,17 @@ public:
    static void serialhandlerMaster();  //handles serial input for Master
    static void settingshandler(uint16_t cmd0, uint16_t cmd1);
    static void requestDmx(uint16_t channel);   //request dmx from Slave
-   static int writeSetting(uint8_t iD, int value); //writes a setting to slave
-   static int writeSetting_saveTOEEPROM();
-   static void writeSetting_restartSlave();
-   static void writeSetting_hardresetSlave();
-   static void writeSetting_setSlaveAddress(uint8_t address);
-   static void writeSetting_setSlavemode(int value);
-   static bool readSetting_timeoutDmx512();
-   static bool readSetting_timeoutNRF24();
-   static uint8_t readSetting_NRF24noise(uint8_t channel);
-   static void writeSetting_NRF24channel(int channel);   // 0...255, -1: automatic
-   static int readSetting_NRF24channel();
+   static void requestSetting(uint16_t cmd0, uint16_t cmd1); //request setting
+   // static int writeSetting_saveTOEEPROM();
+   // static void writeSetting_restartSlave();
+   // static void writeSetting_hardresetSlave();
+   // static void writeSetting_setSlaveAddress(uint8_t address);
+   // static void writeSetting_setSlavemode(int value);
+   // static bool readSetting_timeoutDmx512();
+   // static bool readSetting_timeoutNRF24();
+   // static uint8_t readSetting_NRF24noise(uint8_t channel);
+   // static void writeSetting_NRF24channel(int channel);   // 0...255, -1: automatic
+   // static int readSetting_NRF24channel();
    static void setConfig(dmxwire_settings_t cfg);
    dmxwire_settings_t getConfig();
 
@@ -261,6 +261,7 @@ private:
    //task safety
    static SemaphoreHandle_t sync_dmx;
    static SemaphoreHandle_t sync_config;
+   static SemaphoreHandle_t sync_wire;
 
 }; extern DMXWire Dmxwire;
 
