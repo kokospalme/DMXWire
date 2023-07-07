@@ -125,7 +125,7 @@ void DMXWire::masterRx_task(void*pvParameters){
                   Dmxwire.write(_request.requestChannel + i, temp[2]);
 
 
-                  Serial.println(temp[2]);
+                  // Serial.println(temp[2]);
                }else{
                Serial.printf("received wrong channel.msg:%u.%u.%u\n", temp[0], temp[1], temp[2]);
                }
@@ -166,7 +166,7 @@ void DMXWire::requestDmx(uint16_t channel){
    _packet[1] = (uint8_t) (channel >> 8);
    _packet[2] = (uint8_t) channel;
 
-   Serial.printf("request ch:%u ... ", channel);
+   // Serial.printf("request ch:%u ... ", channel);
 
    
 
