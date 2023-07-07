@@ -97,6 +97,13 @@ void DMXWire::setLedTx(uint8_t mode){	//set mode for ledRx
 set the IOmode and store it to preferences
 */
 void DMXWire::setIomode(uint8_t mode){
+   xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
+   config.ioMode = DMXBOARD_MODE_OFF;
+   switchIomode();
+   xSemaphoreGive(sync_config);
+   Serial.println("MODE: OFF (tasks deleted)");
+   // while(!Serial.available());
+   delay(100);
 
    Serial.printf("dmxwire iomode: %i\n", mode);
 
@@ -104,10 +111,25 @@ void DMXWire::setIomode(uint8_t mode){
    if(mode != config.ioMode){
       config.ioMode = mode;
    }
-   if(usePreferences)preferences->putUChar("ioMode", config.ioMode);
+
+   Serial.println("iomode locally written.");
    xSemaphoreGive(sync_config);
 
+   // while(!Serial.available());
+delay(100);
+   
+   
+   preferences->putUChar("ioMode", config.ioMode);
+   Serial.println("iomode stored.");
+
+   // while(!Serial.available());
+delay(100);
    switchIomode();
+
+
+   
+
+   
 }
 
 /*
@@ -477,8 +499,8 @@ Initialize preferences object
 void DMXWire::preferencesInit(){
    if(!usePreferences)return;
    preferences = new Preferences();
-   preferences->begin("dmxwire_config", false);
-   Serial.println("preferences initialized");
+   if(preferences->begin("dmxwire_config", false))Serial.println("preferences initialized");
+   else Serial.println("preferences initialized failed.");
 
 }
 
@@ -490,7 +512,7 @@ void DMXWire::readConfig(){
    if(!usePreferences)return;
 
    xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
-   config.ioMode = preferences->getUChar("ioMode", DMXBOARD_MODE_TX_DMX512);
+   config.ioMode = preferences->getUChar("ioMode", DMXBOARD_MODE_OFF);
    config.ledRxMode = preferences->getUChar("ledRxMode", DMXWIRE_LED_WIRE);
    config.ledRxpin = preferences->getInt("ledRxPin", -1);
    config.ledTxMode = preferences->getUChar("ledTxMode",DMXWIRE_LED_DMX512);
@@ -501,18 +523,20 @@ void DMXWire::readConfig(){
    config.timeout_nrf24_ms = preferences->getULong("timeout_nrf24_ms", 500);
    config.timeout_wire_ms = preferences->getULong("timeout_wire_ms", 500);
 
-   // Serial.printf("ioMode:%u\n",config.ioMode);
-   // Serial.printf("ledRxpin:%i\n",config.ledRxpin);
-   // Serial.printf("ledTxpin:%i\n",config.ledTxpin);
-   // Serial.printf("tx framerate:%u\n",config.txFramerate_ms);
-   // Serial.printf("ledRxMode:%u\n",config.ledRxMode);
-   // Serial.printf("ledTxMode:%u\n",config.ledTxMode);
-   // Serial.printf("nrf_RXTXaddress:%u\n",config.nrf_RXTXaddress);
-   // Serial.printf("nrf_RXTXchannel:%u\n",config.nrf_RXTXchannel);
-   // Serial.printf("timeout_wire_ms:%lu\n",config.timeout_wire_ms);
-   // Serial.printf("timeout_dmx512_ms:%lu\n",config.timeout_dmx512_ms);
-   // Serial.printf("timeout_nrf24_ms:%lu\n",config.timeout_nrf24_ms);
-   // Serial.println("=======================");
+
+   Serial.println("=== CONFIG READ: ===");
+   Serial.printf("ioMode:%u\n",config.ioMode);
+   Serial.printf("ledRxpin:%i\n",config.ledRxpin);
+   Serial.printf("ledTxpin:%i\n",config.ledTxpin);
+   Serial.printf("tx framerate:%u\n",config.txFramerate_ms);
+   Serial.printf("ledRxMode:%u\n",config.ledRxMode);
+   Serial.printf("ledTxMode:%u\n",config.ledTxMode);
+   Serial.printf("nrf_RXTXaddress:%u\n",config.nrf_RXTXaddress);
+   Serial.printf("nrf_RXTXchannel:%u\n",config.nrf_RXTXchannel);
+   Serial.printf("timeout_wire_ms:%lu\n",config.timeout_wire_ms);
+   Serial.printf("timeout_dmx512_ms:%lu\n",config.timeout_dmx512_ms);
+   Serial.printf("timeout_nrf24_ms:%lu\n",config.timeout_nrf24_ms);
+   Serial.println("=======================");
 
 
    xSemaphoreGive(sync_config);

@@ -245,13 +245,15 @@ void DMXWire::settingshandler(uint16_t cmd0, uint16_t cmd1){
 
 }
 
-void DMXWire::dmxboardInit(){
+void DMXWire::dmxboardInit(bool usePreferences){
    sync_dmx = xSemaphoreCreateMutex(); //create semaphore
    sync_config = xSemaphoreCreateMutex(); //create semaphore
-   Serial.println("read config from preferences:");
    radio = new RF24(hardwareCfg.nrf_ce, hardwareCfg.nrf_cs);  //init radio
+
+   DMXWire::usePreferences = usePreferences;
+   if(usePreferences)Serial.println("read config from preferences:");
    Dmxwire.preferencesInit();
-   Dmxwire.readConfig();
+   if(usePreferences)Dmxwire.readConfig();
 
    config.ledRxpin = LEDRX_PIN;  //overwrite pins for dmxboard
    config.ledTxpin = LEDTX_PIN;
@@ -356,7 +358,7 @@ void DMXWire::dmxboardRun(){
          
          if(_healthy){
             digitalWrite(config.ledRxpin, HIGH);
-            // Serial.printf("MODE_RX_DMX512. %u.%u.%u.%u.%u\n", Dmxwire.read(1),Dmxwire.read(2),Dmxwire.read(3),Dmxwire.read(4),Dmxwire.read(5));
+            Serial.printf("MODE_RX_DMX512. %u.%u.%u.%u.%u\n", Dmxwire.read(1),Dmxwire.read(2),Dmxwire.read(3),Dmxwire.read(4),Dmxwire.read(5));
          }else{
             digitalWrite(config.ledRxpin, LOW);
             // Serial.print("MODE_RX_DMX512. FAIL\n");

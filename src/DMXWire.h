@@ -175,7 +175,7 @@ public:
    static bool getTimeout_nrf24();
 
    /* dedicate devices*/
-   static void dmxboardInit();   //initializes dmx board (current hardware: v0.1)
+   static void dmxboardInit(bool usePreferences);   //initializes dmx board (current hardware: v0.1)
    static void dmxboardRun();
 
    /** read/write settings **/
