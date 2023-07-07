@@ -117,14 +117,14 @@ void DMXWire::setIomode(uint8_t mode){
    xSemaphoreGive(sync_config);
 
    // while(!Serial.available());
-delay(100);
+   delay(100);
    
    
    preferences->putUChar("ioMode", config.ioMode);
    Serial.println("iomode stored.");
 
    // while(!Serial.available());
-delay(100);
+   delay(100);
    switchIomode();
 
 
