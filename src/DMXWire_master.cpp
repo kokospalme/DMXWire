@@ -10,9 +10,10 @@ Wire.begin(), xSemaphoreCreateMutex(), slaveAddress to this
 @param uint32_t clock: frequency on I2C bus (default: 400000)
 */
 void DMXWire::beginMaster(uint8_t scl,uint8_t sda, uint8_t slaveaddress, uint32_t clock = 400000){
-   sync_dmx = xSemaphoreCreateMutex(); //create semaphore
-   sync_config = xSemaphoreCreateMutex(); //create semaphore
-   Wire.setTimeOut(100);
+   sync_dmx = xSemaphoreCreateMutex(); //create semaphores
+   sync_config = xSemaphoreCreateMutex();
+   sync_wire = xSemaphoreCreateMutex();
+   Wire.setTimeOut(50);
 	Wire.begin(sda, scl,clock);
 	DMXWire::slaveAddress = slaveaddress;
 }
@@ -104,10 +105,13 @@ void DMXWire::masterRx_task(void*pvParameters){
 
       }else{   //get dmx channel byte by byte
 
-
          if( millis() > _request.timer + _framerate_ms){
             _request.timer = millis();
             if(_ledTxMode == DMXWIRE_LED_WIRE) digitalWrite(_ledTxpin, HIGH);
+
+
+
+            xSemaphoreTake(sync_wire, portMAX_DELAY); 
 
             Dmxwire.requestDmx(_request.requestChannel + i);
             uint8_t bytesReceived = Wire.requestFrom(_slaveAddress, 3);  //wait for a 3 bytes message
@@ -116,22 +120,28 @@ void DMXWire::masterRx_task(void*pvParameters){
                Wire.readBytes(temp,bytesReceived); //receive bytes
                uint16_t _rxCh;
                uint16_t _reqCh = ((uint16_t)(temp[0]) << 8) | (uint16_t)temp[1]; //array to uin16_t
-               if(temp[0] == _request.requestChannel + i){ //if correct channel received: write to Buffer
-               xSemaphoreTake(sync_dmx, portMAX_DELAY);
-               Dmxwire.write(_request.requestChannel + i, temp[1]);
-               xSemaphoreGive(sync_config);
+               if(_reqCh == _request.requestChannel + i){ //if correct channel received: write to Buffer
+
+                  Dmxwire.write(_request.requestChannel + i, temp[2]);
+
+
+                  Serial.println(temp[2]);
                }else{
-               // Serial.printf("received wrong channel.msg:%u.%u.%u\n", temp[0], temp[1], temp[2]);
+               Serial.printf("received wrong channel.msg:%u.%u.%u\n", temp[0], temp[1], temp[2]);
                }
             }else{
                Serial.println("wire timed out");         
             }
             i++;
             if(i > _request.requestNoChannels -1) i = 0; //reset i
+
+            xSemaphoreGive(sync_wire);
          }
+
+         
       
       }
-      delay(20);
+      delay(2);
 
       
    }
@@ -156,13 +166,49 @@ void DMXWire::requestDmx(uint16_t channel){
    _packet[1] = (uint8_t) (channel >> 8);
    _packet[2] = (uint8_t) channel;
 
-   Serial.printf("request ch:%u\n", channel);
+   Serial.printf("request ch:%u ... ", channel);
+
+   
+
    Wire.beginTransmission(slaveAddress); // transmit to device #xy
 	Wire.write(_packet, 3);
 	Wire.endTransmission(true);    // stop transmitting
    timestamp_wire = millis();
 }
 
+/*
+(Master) sends cmd0 & cmd1 to slave
+*/
+void DMXWire::requestSetting(uint16_t cmd0, uint16_t cmd1){
+   uint8_t _packet[4];
+   _packet[0] = (uint8_t) (cmd0 >> 8);
+   _packet[1] = (uint8_t) cmd0;
+   _packet[2] = (uint8_t) (cmd1 >> 8);
+   _packet[3] = (uint8_t) cmd1;
+
+
+   xSemaphoreTake(sync_wire, portMAX_DELAY); 
+
+   Serial.printf("request Setting:%u, %u ...", cmd0, cmd1);
+   Wire.beginTransmission(slaveAddress); // transmit to device #xy
+	Wire.write(_packet, sizeof(_packet));
+	Wire.endTransmission(true);    // stop transmitting
+   timestamp_wire = millis();
+
+   if(config.ledTxMode == DMXWIRE_LED_WIRE) digitalWrite(config.ledTxpin, HIGH);
+
+   uint8_t bytesReceived = Wire.requestFrom(slaveAddress, 2);  //wait for a 2 bytes message
+   if((bool) bytesReceived){  //received something
+      uint8_t temp[bytesReceived];
+      Wire.readBytes(temp,bytesReceived); //receive bytes
+      uint16_t ack = ((uint16_t)(temp[0]) << 8) | (uint16_t)temp[1]; //array to uin16_t
+
+      Serial.printf("ack:%u\n", ack);
+   }else{
+      Serial.println("wire timed out");         
+   }
+   xSemaphoreGive(sync_wire);
+}
 
 /*
 (Master) sends a DMX-Packet to slave.
@@ -178,9 +224,12 @@ void DMXWire::sendPacketToSlave(){	//master TX
    }
    xSemaphoreGive(sync_dmx);
 
-	Wire.beginTransmission(slaveAddress); // transmit to device #xy
-	Wire.write(_packet, DMXWIRE_BYTES_PER_PACKET);
-	Wire.endTransmission();    // stop transmitting
-	packetBusy = DMXWIRE_NOTBUSY;
-	// if(packetNo == 0)Serial.printf("P%u: %u \t%u \t%u \t%u \t%u\n", packets[packetNo][0], packets[packetNo][1], packets[packetNo][2], packets[packetNo][3], packets[packetNo][4], packets[packetNo][5]);
+
+   xSemaphoreTake(sync_wire, portMAX_DELAY); 
+   Wire.beginTransmission(slaveAddress); // transmit to device #xy
+   Wire.write(_packet, DMXWIRE_BYTES_PER_PACKET);
+   Wire.endTransmission();    // stop transmitting
+   packetBusy = DMXWIRE_NOTBUSY;
+   xSemaphoreGive(sync_wire);
+   // if(packetNo == 0)Serial.printf("P%u: %u \t%u \t%u \t%u \t%u\n", packets[packetNo][0], packets[packetNo][1], packets[packetNo][2], packets[packetNo][3], packets[packetNo][4], packets[packetNo][5]);
 }

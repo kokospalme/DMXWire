@@ -21,6 +21,7 @@ dmxwire_hardware_t DMXWire::hardwareCfg;
 dmxwire_settings_t DMXWire::config;
 SemaphoreHandle_t DMXWire::sync_dmx;
 SemaphoreHandle_t DMXWire::sync_config;
+SemaphoreHandle_t DMXWire::sync_wire;
 dmxwire_request_t DMXWire::request;
 dmxwire_status_t DMXWire::slave_status;
 nrf24Data_t DMXWire::nrf24;
