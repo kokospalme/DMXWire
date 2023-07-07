@@ -95,6 +95,8 @@ void DMXWire::slaveRXcallback(int bufSize){  //callback for Wire slave
          packets[packetNo][0] = packetNo;	//head: info which packet is being send
          xSemaphoreGive(sync_dmx);
          Dmxwire.sendPacketToMaster();	//send packet
+
+
       }else if(buffer[0] == DMXWIRE_PACKET_SETTINGS){  //settings
          if(bufSize < 5) return; //packet too small
          uint16_t _cmd0 = buffer[1] << 8 | buffer[2]; //LBHB
@@ -209,11 +211,11 @@ void DMXWire::settingshandler(uint16_t cmd0, uint16_t cmd1){
       Serial.printf("set nrf24 timeout:%u\n", _cfg.timeout_nrf24_ms);
       sendAck((uint16_t)_cfg.timeout_nrf24_ms);
 
-   }else if(cmd0 == SETTINGID_GET_NRF24_NOISE){ //get nrf24 timeout
+   }else if(cmd0 == SETTINGID_GET_NRF24_NOISE){ //get nrf24 noise
       uint8_t _noise = random(0,255);  //ToDo: implement getNoise
       Serial.printf("get nrf24 noise:%u\n", _noise);
       sendAck((uint16_t)_noise);
-   }else if(cmd0 == SETTINGID_SET_NRF24_CHANNEL){ //get nrf24 timeout
+   }else if(cmd0 == SETTINGID_SET_NRF24_CHANNEL){ //get nrf24 channel
       if(cmd1 == SETTINGID_SET_NRF24_CHANNEL_AUTOMODE){
          _cfg.nrf_RXTXchannel = 0;
          Serial.println("set nrf24 channel: automode");
@@ -225,12 +227,21 @@ void DMXWire::settingshandler(uint16_t cmd0, uint16_t cmd1){
    }else if(cmd0 == SETTINGID_GET_NRF24_CHANNEL){ //get nrf24 timeout
       Serial.printf("get nrf24 channel:%u\n", _cfg.nrf_RXTXchannel);
       sendAck((uint16_t)_cfg.nrf_RXTXchannel);
+   }else if(cmd0 == SETTINGID_GET_NRF24_PIPE){ //get nrf24 rxtx pipe
+      Serial.printf("get nrf24 pipe:%u\n", _cfg.nrf_RXTXaddress);
+      sendAck((uint16_t)_cfg.nrf_RXTXaddress);
+
+   }else if(cmd0 == SETTINGID_SET_NRF24_PIPE){ //set nrf24 rxtx pipe
+      _cfg.nrf_RXTXaddress = (unsigned long) cmd1;
+      Serial.printf("set nrf24 pipe:%u\n", _cfg.nrf_RXTXaddress);
+      sendAck((uint16_t)_cfg.nrf_RXTXaddress);
+
    }
 
    xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
    config = _cfg;
    xSemaphoreGive(sync_config);
-   delay(2);
+   delay(1);
 
 }
 
@@ -242,8 +253,7 @@ void DMXWire::dmxboardInit(){
    Dmxwire.preferencesInit();
    Dmxwire.readConfig();
 
-   config.nrf_RXTXaddress = 0xF0F0F0F0F0LL;
-   config.ledRxpin = LEDRX_PIN;  //overwrite pins
+   config.ledRxpin = LEDRX_PIN;  //overwrite pins for dmxboard
    config.ledTxpin = LEDTX_PIN;
 
 

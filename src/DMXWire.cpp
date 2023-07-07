@@ -501,7 +501,6 @@ void DMXWire::readConfig(){
    config.timeout_nrf24_ms = preferences->getULong("timeout_nrf24_ms", 500);
    config.timeout_wire_ms = preferences->getULong("timeout_wire_ms", 500);
 
-
    // Serial.printf("ioMode:%u\n",config.ioMode);
    // Serial.printf("ledRxpin:%i\n",config.ledRxpin);
    // Serial.printf("ledTxpin:%i\n",config.ledTxpin);
