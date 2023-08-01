@@ -21,7 +21,7 @@ void DMXWire::slave_dmx512rx_task(void*pvParameters){
 
 
       if(_healthy){ //
-         if(_ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(_ledRxPin, HIGH);
+         if(_ledRxMode == DMXWIRE_LED_DMX512 && _ledRxPin >= 0) digitalWrite(_ledRxPin, HIGH);
          // uint8_t _buffer[512];
          // DMX::ReadAll(_buffer, 1, 512);
 
@@ -40,7 +40,7 @@ void DMXWire::slave_dmx512rx_task(void*pvParameters){
          }
          
       }else{
-         if(_ledRxMode == DMXWIRE_LED_DMX512) digitalWrite(_ledRxPin, LOW);
+         if(_ledRxMode == DMXWIRE_LED_DMX512 && _ledRxPin >= 0) digitalWrite(_ledRxPin, LOW);
       }
 
 

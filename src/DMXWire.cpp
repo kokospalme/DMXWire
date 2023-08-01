@@ -635,8 +635,8 @@ void DMXWire::switchIomode(){
          xTaskCreatePinnedToCore(DMXWire::nrf24tx_task, "nrf24_tx_task", 1024, NULL, MODE_TX_NRF24_PRIO, &DMXWire::xNrf24tx_taskhandler, NRF24_CORE);
       break;
       case DMXBOARD_MODE_RX_DMX512:
-         setLedTx(DMXWIRE_LED_WIRE);
-         setLedRx(DMXWIRE_LED_DMX512);
+         if(config.ledTxpin >= 0)setLedTx(DMXWIRE_LED_WIRE);
+         if(config.ledRxpin >= 0)setLedRx(DMXWIRE_LED_DMX512);
          Serial.println("init MODE_RX_DMX512. start slave_dmx512rx_task");
          if(dmxInitialized) DMX::changeDirection(input);
          else DMX::Initialize(input);
