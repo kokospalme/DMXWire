@@ -117,14 +117,14 @@ void DMXWire::setIomode(uint8_t mode){
    xSemaphoreGive(sync_config);
 
    // while(!Serial.available());
-   delay(100);
+   // delay(100);
    
    
    if(usePreferences)preferences->putUChar("ioMode", config.ioMode);
    if(usePreferences)Serial.println("iomode stored.");
 
    // while(!Serial.available());
-   delay(100);
+   // delay(100);
    switchIomode();
 
 
@@ -550,16 +550,19 @@ void DMXWire::writeConfig(){
    xSemaphoreTake(sync_config, portMAX_DELAY);  //task safety
    Serial.printf("set ioMode:%u size of config: %u\n", config.ioMode, sizeof(config));
 
-   preferences->putUChar("ioMode", config.ioMode);
-   preferences->putUChar("ledRxMode", config.ledRxMode);
-   preferences->getInt("ledRxPin", config.ledRxpin);
-   preferences->putUChar("ledTxMode", config.ledTxMode);
-   preferences->getInt("ledTxPin", config.ledTxpin);
-   preferences->getULong64("nrf_RXTXaddress", config.nrf_RXTXaddress );
-   preferences->getUChar("nrf_RXTXchannel", config.nrf_RXTXaddress);
-   preferences->getULong("timeout_dmx512_ms", config.timeout_dmx512_ms);
-   preferences->getULong("timeout_nrf24_ms", config.timeout_nrf24_ms);
-   preferences->getULong("timeout_wire_ms", config.timeout_wire_ms);
+   if(usePreferences){
+      preferences->putUChar("ioMode", config.ioMode);
+      preferences->putUChar("ledRxMode", config.ledRxMode);
+      preferences->getInt("ledRxPin", config.ledRxpin);
+      preferences->putUChar("ledTxMode", config.ledTxMode);
+      preferences->getInt("ledTxPin", config.ledTxpin);
+      preferences->getULong64("nrf_RXTXaddress", config.nrf_RXTXaddress );
+      preferences->getUChar("nrf_RXTXchannel", config.nrf_RXTXaddress);
+      preferences->getULong("timeout_dmx512_ms", config.timeout_dmx512_ms);
+      preferences->getULong("timeout_nrf24_ms", config.timeout_nrf24_ms);
+      preferences->getULong("timeout_wire_ms", config.timeout_wire_ms);
+   }
+
 
    xSemaphoreGive(sync_config);
 
@@ -632,8 +635,8 @@ void DMXWire::switchIomode(){
          xTaskCreatePinnedToCore(DMXWire::nrf24tx_task, "nrf24_tx_task", 1024, NULL, MODE_TX_NRF24_PRIO, &DMXWire::xNrf24tx_taskhandler, NRF24_CORE);
       break;
       case DMXBOARD_MODE_RX_DMX512:
-         setLedTx(DMXWIRE_LED_WIRE);
-         setLedRx(DMXWIRE_LED_DMX512);
+         if(config.ledTxpin >= 0)setLedTx(DMXWIRE_LED_WIRE);
+         if(config.ledRxpin >= 0)setLedRx(DMXWIRE_LED_DMX512);
          Serial.println("init MODE_RX_DMX512. start slave_dmx512rx_task");
          if(dmxInitialized) DMX::changeDirection(input);
          else DMX::Initialize(input);
