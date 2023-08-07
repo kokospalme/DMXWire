@@ -120,8 +120,8 @@ void DMXWire::setIomode(uint8_t mode){
    delay(100);
    
    
-   preferences->putUChar("ioMode", config.ioMode);
-   Serial.println("iomode stored.");
+   if(usePreferences)preferences->putUChar("ioMode", config.ioMode);
+   if(usePreferences)Serial.println("iomode stored.");
 
    // while(!Serial.available());
    delay(100);
